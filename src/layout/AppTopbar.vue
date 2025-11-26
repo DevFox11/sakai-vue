@@ -50,7 +50,7 @@ const handleLogout = async () => {
             <!-- Información del usuario (solo visible si está autenticado) -->
             <div v-if="authStore.isAuthenticated" class="flex items-center">
                 <div class="mr-4 text-surface-900 dark:text-surface-0 font-medium">
-                    {{ authStore.userName || 'Usuario' }}
+                    {{ authStore.userName || authStore.userEmail.split('@')[0] || 'Usuario' }}
                 </div>
                 <div class="relative">
                     <button
@@ -64,7 +64,7 @@ const handleLogout = async () => {
                     <!-- Dropdown de usuario -->
                     <div class="hidden absolute right-0 top-full mt-2 bg-surface-0 dark:bg-surface-900 shadow-lg rounded-lg border border-surface-200 dark:border-surface-700 min-w-[200px] z-50">
                         <div class="p-4 border-b border-surface-200 dark:border-surface-700">
-                            <div class="font-medium text-surface-900 dark:text-surface-0">{{ authStore.userName }}</div>
+                            <div class="font-medium text-surface-900 dark:text-surface-0">{{ authStore.userName || authStore.userEmail.split('@')[0] }}</div>
                             <div class="text-sm text-muted-color mt-1">{{ authStore.userEmail }}</div>
                         </div>
                         <div class="p-2">

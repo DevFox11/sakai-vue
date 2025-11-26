@@ -125,6 +125,11 @@ const router = createRouter({
                     component: () => import('@/views/pages/user/Profile.vue')
                 },
                 {
+                    path: '/no-organization',
+                    name: 'noOrganization',
+                    component: () => import('@/views/NoOrganization.vue')
+                },
+                {
                     path: '/documentation',
                     name: 'documentation',
                     component: () => import('@/views/pages/Documentation.vue')

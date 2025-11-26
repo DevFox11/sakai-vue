@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', {
          * Obtiene el nombre del usuario actual
          */
         userName: (state) => {
-            return state.user?.name || '';
+            return state.user?.name || state.user?.first_name || state.user?.full_name || '';
         },
 
         /**

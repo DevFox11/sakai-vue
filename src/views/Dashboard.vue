@@ -4,10 +4,43 @@ import NotificationsWidget from '@/components/dashboard/NotificationsWidget.vue'
 import RecentSalesWidget from '@/components/dashboard/RecentSalesWidget.vue';
 import RevenueStreamWidget from '@/components/dashboard/RevenueStreamWidget.vue';
 import StatsWidget from '@/components/dashboard/StatsWidget.vue';
-import { onMounted } from 'vue';
+import { onMounted, ref, onBeforeMount } from 'vue';
 import { useLayout } from '@/layout/composables/layout';
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
 
 const { layoutConfig } = useLayout();
+const authStore = useAuthStore();
+const router = useRouter();
+const hasOrganization = ref(true); // Valor por defecto
+
+onBeforeMount(async () => {
+  // Verificar si el usuario tiene una organización
+  // Aquí se haría una llamada a la API real para verificar si el usuario tiene organización
+  // Por ahora, simularemos la verificación (en producción, debería devolver true/false desde el backend)
+  try {
+    // await checkUserOrganization();
+    // Simulamos que el usuario no tiene organización
+    // En la implementación real, esto vendría de la API
+    // Por ahora, en desarrollo, asumiremos que el usuario no tiene organización
+    // En un entorno real, aquí se haría una llamada para verificar si el usuario tiene una organización
+    hasOrganization.value = false; // Suponemos que no tiene organización para propósitos de desarrollo
+
+    if (!hasOrganization.value) {
+      // Redirigir a la página de creación de organización
+      router.push({ name: 'noOrganization' });
+    }
+  } catch (error) {
+    console.error('Error verificando organización:', error);
+  }
+});
+
+// Función para verificar si el usuario tiene una organización
+// async function checkUserOrganization() {
+  // Aquí se llamaría a un servicio real para verificar si el usuario tiene organización
+  // const response = await organizationService.getUserOrganization(authStore.user.id);
+  // hasOrganization.value = response.hasOrganization;
+// }
 </script>
 
 <template>
@@ -32,8 +65,6 @@ const { layoutConfig } = useLayout();
             <div class="col-span-12 lg:col-span-6 xl:col-span-6">
                 <NotificationsWidget />
             </div>
-icationsWidget />
-onsWidget />
         </div>
     </div>
 </template>
