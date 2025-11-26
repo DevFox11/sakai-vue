@@ -89,4 +89,26 @@ function checkActiveRoute(item) {
     </li>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.layout-submenu {
+  &-enter-from,
+  &-leave-to {
+    max-height: 0;
+  }
+
+  &-enter-to,
+  &-leave-from {
+    max-height: 1000px;
+  }
+
+  &-enter-active {
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out;
+  }
+
+  &-leave-active {
+    overflow: hidden;
+    transition: max-height 0.2s ease-in-out;
+  }
+}
+</style>
