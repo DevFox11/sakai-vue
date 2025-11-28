@@ -8,39 +8,44 @@ import { onMounted, ref, onBeforeMount } from 'vue';
 import { useLayout } from '@/layout/composables/layout';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
+import apiClient from '@/api/axios';
 
 const { layoutConfig } = useLayout();
 const authStore = useAuthStore();
 const router = useRouter();
-const hasOrganization = ref(true); // Valor por defecto
+const hasOrganization = ref(false); // Valor por defecto
 
 onBeforeMount(async () => {
   // Verificar si el usuario tiene una organización
-  // Aquí se haría una llamada a la API real para verificar si el usuario tiene organización
-  // Por ahora, simularemos la verificación (en producción, debería devolver true/false desde el backend)
   try {
-    // await checkUserOrganization();
-    // Simulamos que el usuario no tiene organización
-    // En la implementación real, esto vendría de la API
-    // Por ahora, en desarrollo, asumiremos que el usuario no tiene organización
-    // En un entorno real, aquí se haría una llamada para verificar si el usuario tiene una organización
-    hasOrganization.value = false; // Suponemos que no tiene organización para propósitos de desarrollo
-
-    if (!hasOrganization.value) {
-      // Redirigir a la página de creación de organización
-      router.push({ name: 'noOrganization' });
-    }
+    await checkUserOrganization();
   } catch (error) {
     console.error('Error verificando organización:', error);
   }
 });
 
 // Función para verificar si el usuario tiene una organización
-// async function checkUserOrganization() {
-  // Aquí se llamaría a un servicio real para verificar si el usuario tiene organización
-  // const response = await organizationService.getUserOrganization(authStore.user.id);
-  // hasOrganization.value = response.hasOrganization;
-// }
+async function checkUserOrganization() {
+  try {
+    // Llamar al endpoint para listar organizaciones del usuario
+    const response = await apiClient.get('/organizations');
+
+    // Si el usuario tiene al menos una organización, tiene acceso al dashboard
+    const userHasOrg = response.data && response.data.length > 0;
+
+    if (!userHasOrg) {
+      // Si no tiene organizaciones, redirigir a la página de creación
+      router.push({ name: 'noOrganization' });
+    } else {
+      // Si tiene organizaciones, continuar normalmente
+      hasOrganization.value = true;
+    }
+  } catch (error) {
+    console.error('Error obteniendo organizaciones del usuario:', error);
+    // En caso de error, asumimos que no tiene organización
+    router.push({ name: 'noOrganization' });
+  }
+}
 </script>
 
 <template>

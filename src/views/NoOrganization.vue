@@ -1,9 +1,7 @@
 <template>
     <div class="px-4 pt-4">
         <div class="mb-8 text-center">
-            <div class="bg-surface-100 dark:bg-surface-800 border-round mx-auto mb-4 flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
-                <i class="pi pi-building text-5xl text-surface-400"></i>
-            </div>
+            <img src="/images/sonreir.png" alt="Sonreír" class="mx-auto mb-4" style="width: 80px; height: 80px;" />
             <h1 class="text-3xl font-bold text-surface-900 dark:text-white mb-4">No tienes una organización</h1>
             <div class="max-w-2xl mx-auto px-4">
                 <p class="text-muted-color text-lg text-center block">
@@ -17,29 +15,43 @@
                 label="Crear Organización"
                 icon="pi pi-plus"
                 class="p-button-primary p-button-lg"
-                @click="createOrganization"
+                @click="showCreateModal = true"
             />
         </div>
+
+        <CreateOrganizationModal
+            v-model="showCreateModal"
+            @created="onOrganizationCreated"
+        />
     </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'primevue/usetoast';
+import apiClient from '@/api/axios';
+import CreateOrganizationModal from '@/components/CreateOrganizationModal.vue';
 
 const router = useRouter();
-const toast = useToast();
+const showCreateModal = ref(false);
 
-const createOrganization = async () => {
-    // En el futuro, aquí se abrirá un modal para crear la organización
-    // Por ahora, simplemente mostraremos un mensaje de notificación
-    toast.add({
-        severity: 'info',
-        summary: 'Crear Organización',
-        detail: 'En breve se abrirá un modal para crear tu organización',
-        life: 3000
-    });
+// Verificar si el usuario ya tiene organizaciones al cargar el componente
+onMounted(async () => {
+  try {
+    const response = await apiClient.get('/organizations');
+    const userHasOrg = response.data && response.data.length > 0;
 
-    console.log('Botón de crear organización presionado');
+    // Si el usuario tiene organizaciones, redirigir al dashboard
+    if (userHasOrg) {
+      router.push({ name: 'dashboard' });
+    }
+  } catch (error) {
+    console.error('Error obteniendo organizaciones del usuario:', error);
+  }
+});
+
+const onOrganizationCreated = () => {
+    // Redirigir al dashboard después de crear la organización
+    router.push({ name: 'dashboard' });
 };
 </script>
