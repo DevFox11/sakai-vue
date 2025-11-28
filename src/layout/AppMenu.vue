@@ -20,7 +20,6 @@ const model = ref([
     {
         label: 'Configuración',
         items: [
-            { label: 'Mi Perfil', icon: 'pi pi-fw pi-user', to: '/pages/user/profile' },
             { label: 'Mi Organización', icon: 'pi pi-fw pi-building', to: '/pages/empty' },
             { label: 'Usuarios', icon: 'pi pi-fw pi-users', to: '/pages/crud' }
         ]
