@@ -12,3 +12,21 @@
     flex: 1 1 auto;
     padding-bottom: 2rem;
 }
+
+.layout-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 0;
+    border-top: 1px solid var(--surface-border);
+    background-color: var(--surface-ground);
+    font-weight: 500;
+
+    /* Sticky footer configuration */
+    position: sticky;
+    bottom: 0;
+    z-index: 99;
+    backdrop-filter: blur(10px);
+    background: rgba(var(--surface-ground-rgb), 0.8);
+    /* Semi-transparent for glass effect if supported */
+}
