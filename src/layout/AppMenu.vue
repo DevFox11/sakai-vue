@@ -13,7 +13,14 @@ const model = ref([
     {
         label: 'Gestión',
         items: [
-            { label: 'Prospectos', icon: 'pi pi-fw pi-users', to: '/pages/prospectos' },
+            {
+                label: 'Prospectos',
+                icon: 'pi pi-fw pi-users',
+                items: [
+                    { label: 'Lista', icon: 'pi pi-fw pi-list', to: '/pages/prospectos' },
+                    { label: 'Nuevo', icon: 'pi pi-fw pi-plus', to: '/pages/prospectos/nuevo' }
+                ]
+            },
             { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-line', to: '/pages/estadisticasReportes' }
         ]
     },

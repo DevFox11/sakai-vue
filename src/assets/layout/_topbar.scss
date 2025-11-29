@@ -8,8 +8,20 @@
     top: 0;
     width: 100%;
     padding: 0 2rem;
-    background-color: var(--surface-card);
-    transition: left var(--layout-section-transition-duration);
+
+    /* Glassmorphism effect - with theme support */
+    background: var(--surface-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--surface-border);
+    box-shadow:
+        0 4px 24px 0 rgba(0, 0, 0, 0.1),
+        inset 0 0 0 1px var(--surface-border);
+
+    transition:
+        left var(--layout-section-transition-duration),
+        background-color 0.3s ease,
+        box-shadow 0.3s ease;
     display: flex;
     align-items: center;
 
@@ -45,11 +57,16 @@
         width: 2.5rem;
         height: 2.5rem;
         color: var(--text-color);
-        transition: background-color var(--element-transition-duration);
+        transition:
+            background-color 0.3s ease,
+            transform 0.2s ease,
+            box-shadow 0.3s ease;
         cursor: pointer;
 
         &:hover {
-            background-color: var(--surface-hover);
+            background: rgba(var(--primary-color-rgb), 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         &:focus-visible {
@@ -66,8 +83,14 @@
         }
 
         &.layout-topbar-action-highlight {
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-600));
             color: var(--primary-contrast-color);
+            box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+
+            &:hover {
+                transform: translateY(-2px) scale(1.05);
+                box-shadow: 0 6px 16px rgba(var(--primary-color-rgb), 0.4);
+            }
         }
     }
 
@@ -167,7 +190,7 @@
     }
 
     .config-panel-colors {
-        > div {
+        >div {
             padding-top: 0.5rem;
             display: flex;
             gap: 0.5rem;
