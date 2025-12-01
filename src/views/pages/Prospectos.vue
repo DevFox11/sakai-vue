@@ -1,5 +1,5 @@
 <script setup>
-import LeadsView from './prospectos/LeadsView.vue';
+import LeadsView from '../crm/prospectos/LeadsView.vue';
 </script>
 
 <template>

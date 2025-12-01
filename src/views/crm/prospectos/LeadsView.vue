@@ -599,6 +599,7 @@ import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import { useRouter } from 'vue-router';
 import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
+import crmService from '@/service/crm/crmService';
 import apiClient from '@/api/axios';
 import { useOrganizationsStore } from '@/stores/organizations';
 
@@ -793,15 +794,10 @@ const loadLeads = async () => {
       params.utm_campaign = filters.value.utm_campaign;
     }
 
-    const response = await apiClient.get(`/leads/`, {
-      params,
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
-    leads.value = response.data;
+    const response = await crmService.getLeads(organizationsStore.currentOrganizationId, params);
+    leads.value = response;
     // En una implementación real, totalLeads se obtendría de los headers o de una llamada separada
-    totalLeads.value = response.data.length;
+    totalLeads.value = response.length;
   } catch (error) {
     console.error('Error cargando leads:', error);
     toast.add({
@@ -821,13 +817,8 @@ const loadStats = async () => {
       throw new Error('No hay organización seleccionada');
     }
 
-    const response = await apiClient.get('/leads/', {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
+    const allLeads = await crmService.getLeads(organizationsStore.currentOrganizationId);
 
-    const allLeads = response.data;
     stats.value.totalLeads = allLeads.length;
 
     // Calcular leads nuevos hoy
@@ -1017,13 +1008,9 @@ const loadStages = async () => {
       throw new Error('No hay organización seleccionada');
     }
 
-    const response = await apiClient.get(`/leads/stages/`, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
-    stages.value = response.data;
-    stageOptions.value = response.data.map(stage => stage.name);
+    const stagesData = await crmService.getStages(organizationsStore.currentOrganizationId);
+    stages.value = stagesData;
+    stageOptions.value = stagesData.map(stage => stage.name);
   } catch (error) {
     console.error('Error cargando etapas:', error);
     if (error.message !== 'No hay organización seleccionada') {
@@ -1095,21 +1082,13 @@ const viewLead = (lead) => {
 const saveLead = async () => {
   try {
     if (leadDialogMode.value === 'create') {
-      await apiClient.post('/leads/', leadForm.value, {
-        headers: {
-          'X-Organization-ID': organizationsStore.currentOrganizationId
-        }
-      });
+      await crmService.createLead(leadForm.value, organizationsStore.currentOrganizationId);
       toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead creado', life: 3000 });
     } else {
-      await apiClient.put(`/leads/${leadForm.value.id}`, leadForm.value, {
-        headers: {
-          'X-Organization-ID': organizationsStore.currentOrganizationId
-        }
-      });
+      await crmService.updateLead(leadForm.value.id, leadForm.value, organizationsStore.currentOrganizationId);
       toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead actualizado', life: 3000 });
     }
-    
+
     await loadLeads();
     hideLeadDialog();
   } catch (error) {
@@ -1134,11 +1113,7 @@ const confirmDeleteLead = (lead) => {
     icon: 'pi pi-exclamation-triangle',
     accept: async () => {
       try {
-        await apiClient.delete(`/leads/${lead.id}`, {
-          headers: {
-            'X-Organization-ID': organizationsStore.currentOrganizationId
-          }
-        });
+        await crmService.deleteLead(lead.id, organizationsStore.currentOrganizationId);
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead eliminado', life: 3000 });
         await loadLeads();
       } catch (error) {
@@ -1262,15 +1237,10 @@ const applyAdvancedFilters = async () => {
       params.utm_term = advancedFilters.value.utm_term;
     }
 
-    const response = await apiClient.get('/leads/', {
-      params,
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
+    const response = await crmService.getLeads(organizationsStore.currentOrganizationId, params);
 
-    leads.value = response.data;
-    totalLeads.value = response.data.length;
+    leads.value = response;
+    totalLeads.value = response.length;
     
     toast.add({
       severity: 'success',

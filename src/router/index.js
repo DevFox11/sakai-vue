@@ -1,6 +1,7 @@
 import AppLayout from '@/layout/AppLayout.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useOrganizationsStore } from '@/stores/organizations';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -33,6 +34,14 @@ const router = createRouter({
                         breadcrumb: [{ label: 'Gestión' }, { label: 'Prospectos', to: '/pages/prospectos' }, { label: 'Nuevo' }]
                     },
                     component: () => import('@/views/pages/Prospectos.vue') // Placeholder, should probably be a different component or same with props
+                },
+                {
+                    path: '/pages/pipeline',
+                    name: 'pipeline',
+                    meta: {
+                        breadcrumb: [{ label: 'Gestión' }, { label: 'Pipeline' }]
+                    },
+                    component: () => import('@/views/crm/prospectos/PipelineView.vue')
                 },
                 {
                     path: '/pages/estadisticasReportes',
@@ -251,8 +260,9 @@ const router = createRouter({
 });
 
 // Navigation Guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
+    const organizationsStore = useOrganizationsStore();
 
     // Verificar si la ruta requiere autenticación
     const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
@@ -271,6 +281,23 @@ router.beforeEach((to, from, next) => {
         // Redirigir al dashboard
         next({ name: 'dashboard' });
     } else {
+        // Si el usuario está autenticado y la ruta requiere autenticación,
+        // cargar las organizaciones si aún no están cargadas
+        if (requiresAuth && authStore.isAuthenticated) {
+            try {
+                if (organizationsStore.userOrganizations.length === 0) {
+                    await organizationsStore.loadUserOrganizations();
+                }
+
+                // Intentar restaurar la organización seleccionada desde localStorage
+                if (!organizationsStore.currentOrganization) {
+                    organizationsStore.restoreCurrentOrganization();
+                }
+            } catch (error) {
+                console.error('Error al cargar organizaciones:', error);
+            }
+        }
+
         // Permitir la navegación
         next();
     }

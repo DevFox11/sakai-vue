@@ -367,6 +367,7 @@
 import { ref, onMounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
+import crmService from '@/service/crm/crmService';
 import apiClient from '@/api/axios';
 import { useOrganizationsStore } from '@/stores/organizations';
 import { useRoute, useRouter } from 'vue-router';
@@ -415,12 +416,8 @@ onMounted(async () => {
 // Funciones
 const loadLead = async () => {
   try {
-    const response = await apiClient.get(`/leads/${leadId.value}`, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
-    lead.value = response.data;
+    const leadData = await crmService.getLead(leadId.value, organizationsStore.currentOrganizationId);
+    lead.value = leadData;
     
     // Encontrar la etapa actual
     if (stages.value.length > 0 && lead.value.stage_id) {
@@ -435,12 +432,8 @@ const loadLead = async () => {
 
 const loadActivities = async () => {
   try {
-    const response = await apiClient.get(`/leads/${leadId.value}/activities`, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
-    activities.value = response.data;
+    const activitiesData = await crmService.getLeadActivities(leadId.value, organizationsStore.currentOrganizationId);
+    activities.value = activitiesData;
   } catch (error) {
     console.error('Error cargando actividades:', error);
     toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las actividades', life: 3000 });
@@ -449,12 +442,8 @@ const loadActivities = async () => {
 
 const loadStages = async () => {
   try {
-    const response = await apiClient.get(`/leads/stages/`, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
-    stages.value = response.data;
+    const stagesData = await crmService.getStages(organizationsStore.currentOrganizationId);
+    stages.value = stagesData;
     
     // Actualizar la etapa actual si ya se cargó el lead
     if (lead.value && lead.value.stage_id) {
@@ -480,11 +469,7 @@ const loadOwners = async () => {
 
 const updateLead = async () => {
   try {
-    await apiClient.put(`/leads/${leadId.value}`, editForm.value, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
+    await crmService.updateLead(leadId.value, editForm.value, organizationsStore.currentOrganizationId);
     
     toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead actualizado', life: 3000 });
     await loadLead();
@@ -502,11 +487,7 @@ const updateLead = async () => {
 
 const updateNotes = async () => {
   try {
-    await apiClient.put(`/leads/${leadId.value}`, { notes: lead.value.notes }, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
+    await crmService.updateLead(leadId.value, { notes: lead.value.notes }, organizationsStore.currentOrganizationId);
     
     toast.add({ severity: 'success', summary: 'Éxito', detail: 'Notas actualizadas', life: 3000 });
   } catch (error) {
@@ -522,14 +503,7 @@ const updateNotes = async () => {
 
 const moveLeadToStage = async () => {
   try {
-    await apiClient.put('/leads/move', {
-      lead_id: leadId.value,
-      stage_id: newStageId.value
-    }, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
+    await crmService.moveLead(leadId.value, newStageId.value, organizationsStore.currentOrganizationId);
     
     toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead movido de etapa', life: 3000 });
     await loadLead();
@@ -548,11 +522,7 @@ const moveLeadToStage = async () => {
 
 const assignLeadToAgent = async () => {
   try {
-    await apiClient.post(`/leads/${leadId.value}/assign/${newOwnerId.value}`, {}, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
+    await crmService.assignLead(leadId.value, newOwnerId.value, organizationsStore.currentOrganizationId);
     
     toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead asignado', life: 3000 });
     await loadLead();
@@ -570,13 +540,7 @@ const assignLeadToAgent = async () => {
 
 const addQuickNote = async () => {
   try {
-    await apiClient.post(`/leads/${leadId.value}/note`, {
-      note: quickNote.value
-    }, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
+    await crmService.addLeadNote(leadId.value, quickNote.value, 'Nota rápida', organizationsStore.currentOrganizationId);
     
     toast.add({ severity: 'success', summary: 'Éxito', detail: 'Nota agregada', life: 3000 });
     quickNote.value = '';
@@ -594,14 +558,7 @@ const addQuickNote = async () => {
 
 const saveNote = async () => {
   try {
-    await apiClient.post(`/leads/${leadId.value}/note`, {
-      note: noteForm.value.note,
-      title: noteForm.value.title
-    }, {
-      headers: {
-        'X-Organization-ID': organizationsStore.currentOrganizationId
-      }
-    });
+    await crmService.addLeadNote(leadId.value, noteForm.value.note, noteForm.value.title, organizationsStore.currentOrganizationId);
     
     toast.add({ severity: 'success', summary: 'Éxito', detail: 'Nota agregada', life: 3000 });
     hideAddNoteDialog();
@@ -642,11 +599,7 @@ const confirmDeleteLead = () => {
     icon: 'pi pi-exclamation-triangle',
     accept: async () => {
       try {
-        await apiClient.delete(`/leads/${leadId.value}`, {
-          headers: {
-            'X-Organization-ID': organizationsStore.currentOrganizationId
-          }
-        });
+        await crmService.deleteLead(leadId.value, organizationsStore.currentOrganizationId);
         toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead eliminado', life: 3000 });
         router.push('/pages/prospectos'); // Volver a la lista
       } catch (error) {

@@ -74,6 +74,12 @@ export const useOrganizationsStore = defineStore('organizations', {
          */
         setCurrentOrganization(organization) {
             this.currentOrganization = organization;
+            // Guardar en localStorage para persistencia
+            if (organization) {
+                localStorage.setItem('currentOrganization', JSON.stringify(organization));
+            } else {
+                localStorage.removeItem('currentOrganization');
+            }
         },
 
         /**
@@ -156,6 +162,26 @@ export const useOrganizationsStore = defineStore('organizations', {
                 // Algo más causó el error
                 return error.message || 'Error desconocido al procesar la solicitud.';
             }
+        },
+
+        /**
+         * Restaura la organización seleccionada desde localStorage
+         */
+        restoreCurrentOrganization() {
+            try {
+                const organizationStr = localStorage.getItem('currentOrganization');
+                if (organizationStr) {
+                    const organization = JSON.parse(organizationStr);
+                    // Verificar si es un objeto válido con id
+                    if (organization && organization.id) {
+                        this.currentOrganization = organization;
+                        return organization;
+                    }
+                }
+            } catch (error) {
+                console.error('Error al restaurar la organización desde localStorage:', error);
+            }
+            return null;
         }
     }
 });

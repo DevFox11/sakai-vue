@@ -3,9 +3,73 @@
  * Maneja todas las peticiones relacionadas con leads, etapas y actividades al backend
  */
 
-import apiClient from './axios';
+import apiClient from '@/api/axios';
 
 const crmService = {
+    /**
+     * Pipelines
+     */
+
+    // Crear un nuevo pipeline
+    async createPipeline(pipelineData, organizationId) {
+        const response = await apiClient.post('/leads/pipelines/', pipelineData, {
+            headers: {
+                'X-Organization-ID': organizationId
+            }
+        });
+        return response.data;
+    },
+
+    // Obtener lista de pipelines
+    async getPipelines(organizationId) {
+        const response = await apiClient.get('/leads/pipelines/', {
+            headers: {
+                'X-Organization-ID': organizationId
+            }
+        });
+        return response.data;
+    },
+
+    // Obtener un pipeline específico
+    async getPipeline(pipelineId, organizationId) {
+        const response = await apiClient.get(`/leads/pipelines/${pipelineId}`, {
+            headers: {
+                'X-Organization-ID': organizationId
+            }
+        });
+        return response.data;
+    },
+
+    // Actualizar un pipeline
+    async updatePipeline(pipelineId, pipelineData, organizationId) {
+        const response = await apiClient.put(`/leads/pipelines/${pipelineId}`, pipelineData, {
+            headers: {
+                'X-Organization-ID': organizationId
+            }
+        });
+        return response.data;
+    },
+
+    // Eliminar un pipeline
+    async deletePipeline(pipelineId, organizationId) {
+        const response = await apiClient.delete(`/leads/pipelines/${pipelineId}`, {
+            headers: {
+                'X-Organization-ID': organizationId
+            }
+        });
+        return response.data;
+    },
+
+    // Obtener etapas de un pipeline específico
+    async getPipelineStages(pipelineId, organizationId) {
+        const response = await apiClient.get(`/leads/pipelines/${pipelineId}/stages`, {
+            headers: {
+                'X-Organization-ID': organizationId
+            }
+        });
+        return response.data;
+    },
+
     /**
      * Leads
      */

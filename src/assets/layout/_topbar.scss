@@ -18,6 +18,20 @@
         0 4px 24px 0 rgba(0, 0, 0, 0.1),
         inset 0 0 0 1px var(--surface-border);
 
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0 2rem;
+
+    /* Glassmorphism effect - with theme support */
+    background: var(--surface-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--surface-border);
+    box-shadow:
+        0 4px 24px 0 rgba(0, 0, 0, 0.1),
+        inset 0 0 0 1px var(--surface-border);
+
     transition:
         left var(--layout-section-transition-duration),
         background-color 0.3s ease,
