@@ -7,11 +7,13 @@ import StatsWidget from '@/components/dashboard/StatsWidget.vue';
 import { onMounted, ref, onBeforeMount } from 'vue';
 import { useLayout } from '@/layout/composables/layout';
 import { useAuthStore } from '@/stores/auth';
+import { useOrganizationsStore } from '@/stores/organizations';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/axios';
 
 const { layoutConfig } = useLayout();
 const authStore = useAuthStore();
+const organizationsStore = useOrganizationsStore();
 const router = useRouter();
 const hasOrganization = ref(false); // Valor por defecto
 
@@ -39,6 +41,12 @@ async function checkUserOrganization() {
     } else {
       // Si tiene organizaciones, continuar normalmente
       hasOrganization.value = true;
+
+      // Cargar organizaciones en el store y establecer la primera como actual
+      organizationsStore.userOrganizations = response.data;
+      if (response.data.length > 0 && !organizationsStore.currentOrganization) {
+        organizationsStore.currentOrganization = response.data[0];
+      }
     }
   } catch (error) {
     console.error('Error obteniendo organizaciones del usuario:', error);
@@ -51,7 +59,12 @@ async function checkUserOrganization() {
 <template>
     <div class="px-4 pt-4">
         <div class="mb-8">
-            <h1 class="text-3xl font-bold text-surface-900 dark:text-white">Panel de Control</h1>
+            <h1 class="text-3xl font-bold text-surface-900 dark:text-white">
+                Panel de Control
+                <span v-if="organizationsStore.currentOrganization" class="ml-3 text-xl font-semibold text-primary-600 dark:text-primary-400">
+                    - {{ organizationsStore.currentOrganization.name }}
+                </span>
+            </h1>
             <p class="text-muted-color mt-2">Resumen de tu negocio y desempeño</p>
         </div>
 
