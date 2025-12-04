@@ -23,25 +23,25 @@ const router = createRouter({
                     path: '/pages/prospectos',
                     name: 'prospectos',
                     meta: {
-                        breadcrumb: [{ label: 'Gestión' }, { label: 'Prospectos' }]
+                        breadcrumb: [{ label: 'Gestión' }, { label: 'CRM - Leads' }]
                     },
-                    component: () => import('@/views/pages/Prospectos.vue')
+                    component: () => import('@/views/crm/prospectos/CRMLeadsView.vue')
                 },
                 {
                     path: '/pages/prospectos/nuevo',
                     name: 'prospectos-nuevo',
                     meta: {
-                        breadcrumb: [{ label: 'Gestión' }, { label: 'Prospectos', to: '/pages/prospectos' }, { label: 'Nuevo' }]
+                        breadcrumb: [{ label: 'Gestión' }, { label: 'CRM - Leads', to: '/pages/prospectos' }, { label: 'Nuevo' }]
                     },
-                    component: () => import('@/views/pages/Prospectos.vue') // Placeholder, should probably be a different component or same with props
+                    component: () => import('@/views/crm/prospectos/CRMLeadsView.vue')
                 },
                 {
                     path: '/pages/pipeline',
                     name: 'pipeline',
                     meta: {
-                        breadcrumb: [{ label: 'Gestión' }, { label: 'Pipeline' }]
+                        breadcrumb: [{ label: 'Gestión' }, { label: 'CRM - Leads' }]
                     },
-                    component: () => import('@/views/crm/prospectos/PipelineView.vue')
+                    redirect: '/pages/prospectos' // Redirect to unified view
                 },
                 {
                     path: '/pages/estadisticasReportes',
