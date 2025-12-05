@@ -22,17 +22,11 @@ const router = createRouter({
                 {
                     path: '/pages/prospectos',
                     name: 'prospectos',
-                    meta: {
-                        breadcrumb: [{ label: 'Gestión' }, { label: 'CRM - Leads' }]
-                    },
                     component: () => import('@/views/crm/prospectos/CRMLeadsView.vue')
                 },
                 {
                     path: '/pages/prospectos/nuevo',
                     name: 'prospectos-nuevo',
-                    meta: {
-                        breadcrumb: [{ label: 'Gestión' }, { label: 'CRM - Leads', to: '/pages/prospectos' }, { label: 'Nuevo' }]
-                    },
                     component: () => import('@/views/crm/prospectos/CRMLeadsView.vue')
                 },
                 {

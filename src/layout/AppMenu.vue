@@ -1,42 +1,77 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 
 import AppMenuItem from './AppMenuItem.vue';
+
+defineProps({
+    collapsed: {
+        type: Boolean,
+        default: false
+    }
+});
 
 const model = ref([
     {
         label: 'Inicio',
+        icon: 'pi pi-fw pi-home',
+        to: '/'
+    },
+    {
+        label: 'Comunicaciones',
+        icon: 'pi pi-fw pi-comments',
         items: [
-            { label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' }
+            { label: 'Mensajes', icon: 'pi pi-fw pi-envelope', to: '/pages/empty' },
+            { label: 'Campañas', icon: 'pi pi-fw pi-send', to: '/pages/empty' }
         ]
     },
     {
-        label: 'Gestión',
+        label: 'CRM',
+        icon: 'pi pi-fw pi-sitemap',
         items: [
-            {
-                label: 'CRM',
-                icon: 'pi pi-fw pi-users',
-                items: [
-                    { label: 'Leads & Pipeline', icon: 'pi pi-fw pi-th-large', to: '/pages/prospectos' }
-                ]
-            },
-            { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-line', to: '/pages/estadisticasReportes' }
+            { label: 'Leads y pipelines', icon: 'pi pi-fw pi-users', to: '/pages/prospectos' }
         ]
     },
     {
-        label: 'Configuración',
+        label: 'Tareas',
+        icon: 'pi pi-fw pi-check-square',
+        to: '/pages/empty'
+    },
+    {
+        label: 'Listas',
+        icon: 'pi pi-fw pi-list',
         items: [
-            { label: 'Mi Organización', icon: 'pi pi-fw pi-building', to: '/pages/empty' },
-            { label: 'Usuarios', icon: 'pi pi-fw pi-users', to: '/pages/crud' }
+            { label: 'Contactos', icon: 'pi pi-fw pi-user', to: '/pages/empty' },
+            { label: 'Empresas', icon: 'pi pi-fw pi-building', to: '/pages/empty' }
         ]
+    },
+    {
+        label: 'IA y Automatización',
+        icon: 'pi pi-fw pi-bolt',
+        items: [
+            { label: 'Flujos', icon: 'pi pi-fw pi-arrows-alt', to: '/pages/empty' },
+            { label: 'Bots', icon: 'pi pi-fw pi-android', to: '/pages/empty' }
+        ]
+    },
+    {
+        label: 'Insights',
+        icon: 'pi pi-fw pi-chart-bar',
+        items: [
+            { label: 'Estadísticas', icon: 'pi pi-fw pi-chart-line', to: '/pages/estadisticasReportes' },
+            { label: 'Reportes', icon: 'pi pi-fw pi-file', to: '/pages/empty' }
+        ]
+    },
+    {
+        label: 'WhatsApp Business',
+        icon: 'pi pi-fw pi-whatsapp',
+        to: '/pages/empty'
     }
 ]);
 </script>
 
 <template>
-    <ul class="layout-menu">
+    <ul class="layout-menu" :class="{ 'collapsed': collapsed }">
         <template v-for="(item, i) in model" :key="item">
-            <app-menu-item v-if="!item.separator" :item="item" :index="i"></app-menu-item>
+            <app-menu-item v-if="!item.separator" :item="item" :index="i" :collapsed="collapsed"></app-menu-item>
             <li v-if="item.separator" class="menu-separator"></li>
         </template>
     </ul>
@@ -44,119 +79,18 @@ const model = ref([
 
 <style lang="scss" scoped>
 .layout-menu {
-    padding: 0;
+    padding: 0 0.5rem;
     margin: 0;
     list-style-type: none;
 
-    > li {
-        padding: 0;
-        margin: 4px 0;
-
-        > .layout-root-menuitem {
-            > .layout-menuitem-root-text {
-                padding: 1rem 1.5rem;
-                display: block;
-                color: var(--text-color-secondary);
-                font-weight: 700;
-                font-size: .857rem;
-                text-transform: uppercase;
-                letter-spacing: .5px;
-            }
-        }
-
-        > a {
-            padding: 1rem 1.5rem;
-            display: flex;
-            align-items: center;
-            color: var(--text-color);
-            transition: color .2s;
-            text-decoration: none;
-            border-radius: 6px;
-            margin: 0 10px;
-            position: relative;
-            cursor: pointer;
-            overflow: hidden;
-
-            .layout-menuitem-icon {
-                margin-right: 0.75rem;
-                font-size: 1rem;
-                flex-shrink: 0;
-            }
-
-            .layout-menuitem-text {
-                flex-grow: 1;
-            }
-
-            .layout-submenu-toggler {
-                transition: transform .2s;
-                margin-left: 0.5rem;
-            }
-
-            &:hover {
-                color: var(--primary-color);
-                background-color: var(--surface-hover);
-            }
-
-            &.active-route {
-                color: var(--primary-color);
-                background-color: var(--primary-color-lighter);
-            }
-        }
-
-        > .layout-submenu {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-
-            > li {
-                > a {
-                    padding: 0.75rem 1.5rem;
-                    display: flex;
-                    align-items: center;
-                    color: var(--text-color);
-                    transition: color .2s;
-                    text-decoration: none;
-                    border-radius: 6px;
-                    margin: 0 10px 0 24px;
-                    position: relative;
-                    cursor: pointer;
-                    overflow: hidden;
-
-                    .layout-menuitem-icon {
-                        margin-right: 0.75rem;
-                        font-size: 0.9rem;
-                        flex-shrink: 0;
-                    }
-
-                    .layout-menuitem-text {
-                        flex-grow: 1;
-                    }
-
-                    .layout-submenu-toggler {
-                        transition: transform .2s;
-                        margin-left: 0.5rem;
-                    }
-
-                    &:hover {
-                        color: var(--primary-color);
-                        background-color: var(--surface-hover);
-                    }
-
-                    &.active-route {
-                        color: var(--primary-color);
-                        background-color: var(--primary-color-lighter);
-                    }
-                }
-
-                > .layout-submenu {
-                    > li {
-                        > a {
-                            margin-left: 34px;
-                        }
-                    }
-                }
-            }
-        }
+    &.collapsed {
+        padding: 0 0.25rem;
     }
+}
+
+.menu-separator {
+    height: 1px;
+    background: var(--surface-border);
+    margin: 0.75rem 0.5rem;
 }
 </style>
