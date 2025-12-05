@@ -64,68 +64,60 @@
       </div>
     </div>
 
-    <!-- Estadísticas estilo Dashboard -->
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0">
-        <div class="flex justify-between mb-4">
-          <div>
-            <span class="block text-surface-500 font-medium mb-4">Total Leads</span>
-            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ stats.totalLeads }}</div>
-          </div>
-          <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-            <i class="pi pi-list text-blue-500 !text-xl"></i>
+    <!-- Estadísticas compactas en grid responsive -->
+    <div class="col-span-12">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Leads -->
+        <div class="card !p-3 sm:!p-4 mb-0">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-surface-500 text-sm mb-1">Total Leads</div>
+              <div class="text-surface-900 dark:text-surface-0 font-bold text-lg sm:text-xl">{{ stats.totalLeads }}</div>
+            </div>
+            <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-full w-10 h-10 sm:w-12 sm:h-12">
+              <i class="pi pi-list text-blue-500 text-lg sm:text-xl"></i>
+            </div>
           </div>
         </div>
-        <span class="text-primary font-medium">Global </span>
-        <span class="text-surface-500">registrados en el sistema</span>
-      </div>
-    </div>
 
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0">
-        <div class="flex justify-between mb-4">
-          <div>
-            <span class="block text-surface-500 font-medium mb-4">Nuevos Hoy</span>
-            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ stats.newToday }}</div>
-          </div>
-          <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-            <i class="pi pi-calendar-plus text-green-500 !text-xl"></i>
+        <!-- Nuevos Hoy -->
+        <div class="card !p-3 sm:!p-4 mb-0">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-surface-500 text-sm mb-1">Nuevos Hoy</div>
+              <div class="text-surface-900 dark:text-surface-0 font-bold text-lg sm:text-xl">{{ stats.newToday }}</div>
+            </div>
+            <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-full w-10 h-10 sm:w-12 sm:h-12">
+              <i class="pi pi-calendar-plus text-green-500 text-lg sm:text-xl"></i>
+            </div>
           </div>
         </div>
-        <span class="text-green-500 font-medium">+{{ stats.newToday }} </span>
-        <span class="text-surface-500"> desde el último día</span>
-      </div>
-    </div>
 
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0">
-        <div class="flex justify-between mb-4">
-          <div>
-            <span class="block text-surface-500 font-medium mb-4">Contactados</span>
-            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ stats.contacted }}</div>
-          </div>
-          <div class="flex items-center justify-center bg-indigo-100 dark:bg-indigo-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-            <i class="pi pi-comments text-indigo-500 !text-xl"></i>
+        <!-- Contactados -->
+        <div class="card !p-3 sm:!p-4 mb-0">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-surface-500 text-sm mb-1">Contactados</div>
+              <div class="text-surface-900 dark:text-surface-0 font-bold text-lg sm:text-xl">{{ stats.contacted }}</div>
+            </div>
+            <div class="flex items-center justify-center bg-indigo-100 dark:bg-indigo-400/10 rounded-full w-10 h-10 sm:w-12 sm:h-12">
+              <i class="pi pi-comments text-indigo-500 text-lg sm:text-xl"></i>
+            </div>
           </div>
         </div>
-        <span class="text-indigo-500 font-medium">En seguimiento </span>
-        <span class="text-surface-500">activo</span>
-      </div>
-    </div>
 
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0">
-        <div class="flex justify-between mb-4">
-          <div>
-            <span class="block text-surface-500 font-medium mb-4">Oportunidades</span>
-            <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ stats.opportunities }}</div>
-          </div>
-          <div class="flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-            <i class="pi pi-star text-orange-500 !text-xl"></i>
+        <!-- Oportunidades -->
+        <div class="card !p-3 sm:!p-4 mb-0">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-surface-500 text-sm mb-1">Oportunidades</div>
+              <div class="text-surface-900 dark:text-surface-0 font-bold text-lg sm:text-xl">{{ stats.opportunities }}</div>
+            </div>
+            <div class="flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-full w-10 h-10 sm:w-12 sm:h-12">
+              <i class="pi pi-star text-orange-500 text-lg sm:text-xl"></i>
+            </div>
           </div>
         </div>
-        <span class="text-orange-500 font-medium">Alta prioridad </span>
-        <span class="text-surface-500">para cierre</span>
       </div>
     </div>
 
