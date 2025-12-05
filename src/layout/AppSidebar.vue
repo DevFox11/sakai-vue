@@ -332,7 +332,7 @@ const handleLogout = async () => {
     .user-menu-popup {
         position: fixed;
         bottom: 10px;
-        left: 260px;
+        left: 270px;
         width: 280px;
         background: var(--surface-card);
         border: 1px solid var(--surface-border);
