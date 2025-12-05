@@ -64,60 +64,159 @@
       </div>
     </div>
 
-    <!-- Estadísticas compactas en grid responsive -->
+    <!-- Estadísticas Mejoradas con Toggle -->
     <div class="col-span-12">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Total Leads -->
-        <div class="card !p-3 sm:!p-4 mb-0">
-          <div class="flex justify-between items-center">
-            <div>
-              <div class="text-surface-500 text-sm mb-1">Total Leads</div>
-              <div class="text-surface-900 dark:text-surface-0 font-bold text-lg sm:text-xl">{{ stats.totalLeads }}</div>
-            </div>
-            <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-full w-10 h-10 sm:w-12 sm:h-12">
-              <i class="pi pi-list text-blue-500 text-lg sm:text-xl"></i>
-            </div>
+      <div class="card mb-0 !p-0 overflow-hidden">
+        <!-- Header con toggle colapsable -->
+        <div 
+          class="flex justify-between items-center px-4 py-3 cursor-pointer hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+          @click="showStats = !showStats"
+        >
+          <div class="flex items-center gap-2">
+            <i class="pi pi-chart-bar text-primary-500"></i>
+            <span class="font-semibold text-surface-700 dark:text-surface-200">Resumen de Estadísticas</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-surface-500">{{ showStats ? 'Ocultar' : 'Mostrar' }}</span>
+            <i :class="['pi', showStats ? 'pi-chevron-up' : 'pi-chevron-down', 'text-surface-400 transition-transform duration-300']"></i>
           </div>
         </div>
+        
+        <!-- Contenido colapsable -->
+        <Transition name="stats-collapse">
+          <div v-show="showStats" class="border-t border-surface-200 dark:border-surface-700">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-0">
+              
+              <!-- Total Leads -->
+              <div class="stat-card border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
+                <div class="stat-content">
+                  <div class="stat-icon bg-gradient-to-br from-blue-500 to-blue-600">
+                    <i class="pi pi-list"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Total Leads</span>
+                    <span class="stat-value">{{ stats.totalLeads }}</span>
+                    <div class="stat-sparkline">
+                      <svg viewBox="0 0 60 20" class="sparkline-svg">
+                        <polyline points="0,15 10,12 20,14 30,8 40,10 50,5 60,7" fill="none" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-        <!-- Nuevos Hoy -->
-        <div class="card !p-3 sm:!p-4 mb-0">
-          <div class="flex justify-between items-center">
-            <div>
-              <div class="text-surface-500 text-sm mb-1">Nuevos Hoy</div>
-              <div class="text-surface-900 dark:text-surface-0 font-bold text-lg sm:text-xl">{{ stats.newToday }}</div>
-            </div>
-            <div class="flex items-center justify-center bg-green-100 dark:bg-green-400/10 rounded-full w-10 h-10 sm:w-12 sm:h-12">
-              <i class="pi pi-calendar-plus text-green-500 text-lg sm:text-xl"></i>
-            </div>
-          </div>
-        </div>
+              <!-- Nuevos Hoy -->
+              <div class="stat-card border-b lg:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
+                <div class="stat-content">
+                  <div class="stat-icon bg-gradient-to-br from-green-500 to-green-600">
+                    <i class="pi pi-calendar-plus"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Nuevos Hoy</span>
+                    <span class="stat-value">{{ stats.newToday }}</span>
+                    <div class="stat-trend up">
+                      <i class="pi pi-arrow-up"></i>
+                      <span>+{{ stats.newToday > 0 ? Math.round((stats.newToday / Math.max(stats.totalLeads, 1)) * 100) : 0 }}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-        <!-- Contactados -->
-        <div class="card !p-3 sm:!p-4 mb-0">
-          <div class="flex justify-between items-center">
-            <div>
-              <div class="text-surface-500 text-sm mb-1">Contactados</div>
-              <div class="text-surface-900 dark:text-surface-0 font-bold text-lg sm:text-xl">{{ stats.contacted }}</div>
-            </div>
-            <div class="flex items-center justify-center bg-indigo-100 dark:bg-indigo-400/10 rounded-full w-10 h-10 sm:w-12 sm:h-12">
-              <i class="pi pi-comments text-indigo-500 text-lg sm:text-xl"></i>
-            </div>
-          </div>
-        </div>
+              <!-- Contactados -->
+              <div class="stat-card border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
+                <div class="stat-content">
+                  <div class="stat-icon bg-gradient-to-br from-indigo-500 to-indigo-600">
+                    <i class="pi pi-comments"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Contactados</span>
+                    <span class="stat-value">{{ stats.contacted }}</span>
+                    <div class="stat-sparkline">
+                      <svg viewBox="0 0 60 20" class="sparkline-svg text-indigo-500">
+                        <polyline points="0,18 10,15 20,12 30,10 40,8 50,6 60,4" fill="none" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-        <!-- Oportunidades -->
-        <div class="card !p-3 sm:!p-4 mb-0">
-          <div class="flex justify-between items-center">
-            <div>
-              <div class="text-surface-500 text-sm mb-1">Oportunidades</div>
-              <div class="text-surface-900 dark:text-surface-0 font-bold text-lg sm:text-xl">{{ stats.opportunities }}</div>
-            </div>
-            <div class="flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-full w-10 h-10 sm:w-12 sm:h-12">
-              <i class="pi pi-star text-orange-500 text-lg sm:text-xl"></i>
+              <!-- Oportunidades -->
+              <div class="stat-card border-b lg:border-b-0 lg:border-r border-surface-200 dark:border-surface-700">
+                <div class="stat-content">
+                  <div class="stat-icon bg-gradient-to-br from-orange-500 to-orange-600">
+                    <i class="pi pi-star"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Oportunidades</span>
+                    <span class="stat-value">{{ stats.opportunities }}</span>
+                    <div class="stat-trend up">
+                      <i class="pi pi-arrow-up"></i>
+                      <span>Activas</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Valor del Pipeline -->
+              <div class="stat-card border-b sm:border-r border-surface-200 dark:border-surface-700 xl:border-b-0">
+                <div class="stat-content">
+                  <div class="stat-icon bg-gradient-to-br from-emerald-500 to-emerald-600">
+                    <i class="pi pi-dollar"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Valor Pipeline</span>
+                    <span class="stat-value text-emerald-600 dark:text-emerald-400">${{ formatPipelineValue(stats.pipelineValue || 0) }}</span>
+                    <div class="stat-sparkline">
+                      <svg viewBox="0 0 60 20" class="sparkline-svg text-emerald-500">
+                        <polyline points="0,16 10,14 20,10 30,12 40,6 50,8 60,3" fill="none" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tasa de Conversión -->
+              <div class="stat-card border-b xl:border-b-0 xl:border-r border-surface-200 dark:border-surface-700">
+                <div class="stat-content">
+                  <div class="stat-icon bg-gradient-to-br from-purple-500 to-purple-600">
+                    <i class="pi pi-percentage"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Conversión</span>
+                    <span class="stat-value">{{ calculateConversionRate() }}%</span>
+                    <div class="stat-progress">
+                      <div class="progress-bar">
+                        <div class="progress-fill bg-purple-500" :style="{ width: calculateConversionRate() + '%' }"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Leads Pendientes -->
+              <div class="stat-card">
+                <div class="stat-content">
+                  <div class="stat-icon bg-gradient-to-br from-rose-500 to-rose-600">
+                    <i class="pi pi-clock"></i>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-label">Pendientes</span>
+                    <span class="stat-value">{{ stats.pending || (stats.totalLeads - stats.contacted) }}</span>
+                    <div class="stat-trend down" v-if="(stats.pending || (stats.totalLeads - stats.contacted)) > 5">
+                      <i class="pi pi-exclamation-triangle"></i>
+                      <span>Atención</span>
+                    </div>
+                    <div class="stat-trend up" v-else>
+                      <i class="pi pi-check"></i>
+                      <span>OK</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
             </div>
           </div>
-        </div>
+        </Transition>
       </div>
     </div>
 
@@ -838,11 +937,14 @@ const rows = ref(10);
 const loadingLeads = ref(false);
 
 // ===== STATISTICS =====
+const showStats = ref(true);
 const stats = ref({
   totalLeads: 0,
   newToday: 0,
   contacted: 0,
-  opportunities: 0
+  opportunities: 0,
+  pipelineValue: 0,
+  pending: 0
 });
 
 // ===== PIPELINES & STAGES =====
@@ -1045,6 +1147,16 @@ const loadStats = async () => {
       lead.status === 'oportunidad' ||
       lead.status === 'ganado'
     ).length;
+
+    // Calcular valor del pipeline
+    stats.value.pipelineValue = allLeads.reduce((total, lead) => {
+      return total + (parseFloat(lead.estimated_value) || 0);
+    }, 0);
+
+    // Calcular leads pendientes (sin contactar)
+    stats.value.pending = allLeads.filter(lead =>
+      lead.status === 'nuevo' || lead.status === 'sin_contactar'
+    ).length;
   } catch (error) {
     console.error('Error cargando estadísticas:', error);
   }
@@ -1068,6 +1180,21 @@ const loadOwners = async () => {
 // ===== KANBAN HELPERS =====
 const getLeadsByStage = (stageId) => {
   return leads.value.filter(lead => lead.stage_id === stageId);
+};
+
+// ===== STATS HELPERS =====
+const formatPipelineValue = (value) => {
+  if (value >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M';
+  } else if (value >= 1000) {
+    return (value / 1000).toFixed(1) + 'K';
+  }
+  return value.toFixed(0);
+};
+
+const calculateConversionRate = () => {
+  if (stats.value.totalLeads === 0) return 0;
+  return Math.round((stats.value.opportunities / stats.value.totalLeads) * 100);
 };
 
 // ===== DRAG & DROP HANDLERS =====
@@ -1682,5 +1809,159 @@ const getStatusSeverity = (status) => {
 
 :deep(.p-menu .p-menuitem-content .text-red-500 .p-menuitem-icon) {
   color: #ef4444 !important;
+}
+
+/* ========== ESTADÍSTICAS MEJORADAS ========== */
+.stat-card {
+  padding: 1rem;
+  transition: background-color 0.2s;
+}
+
+.stat-card:hover {
+  background: var(--surface-50);
+}
+
+.dark .stat-card:hover {
+  background: var(--surface-800);
+}
+
+.stat-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: white;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon i {
+  animation: pulse-icon 2s infinite ease-in-out;
+}
+
+@keyframes pulse-icon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.stat-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-color);
+  line-height: 1.2;
+}
+
+.stat-sparkline {
+  height: 20px;
+  margin-top: 0.25rem;
+}
+
+.sparkline-svg {
+  width: 100%;
+  height: 100%;
+  color: var(--primary-color);
+}
+
+.stat-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.stat-trend.up {
+  color: #10b981;
+}
+
+.stat-trend.down {
+  color: #f59e0b;
+}
+
+.stat-trend i {
+  font-size: 0.6rem;
+}
+
+.stat-progress {
+  margin-top: 0.25rem;
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--surface-200);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.dark .progress-bar {
+  background: var(--surface-700);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* Animación de colapso */
+.stats-collapse-enter-active,
+.stats-collapse-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.stats-collapse-enter-from,
+.stats-collapse-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+
+.stats-collapse-enter-to,
+.stats-collapse-leave-from {
+  opacity: 1;
+  max-height: 200px;
+}
+
+/* Responsive para estadísticas */
+@media (max-width: 640px) {
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+  
+  .stat-value {
+    font-size: 1.1rem;
+  }
+  
+  .stat-label {
+    font-size: 0.7rem;
+  }
 }
 </style>
