@@ -162,7 +162,8 @@ const handleLogout = async () => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem;
+    height: 4rem;
+    padding: 0 1rem;
     border-bottom: 1px solid var(--surface-border);
 
     .sidebar-logo {
@@ -177,7 +178,7 @@ const handleLogout = async () => {
         .logo-icon {
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
             color: white;
             border-radius: 8px;
             display: flex;
@@ -185,6 +186,7 @@ const handleLogout = async () => {
             justify-content: center;
             font-weight: 700;
             font-size: 1rem;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         }
 
         .logo-text {
