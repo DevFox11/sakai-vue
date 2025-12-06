@@ -750,13 +750,15 @@
             />
           </div>
           <div class="col-span-12 md:col-span-6">
-            <label for="owner_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Asignado a</label>
+            <label for="owner_id" class="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Asignado a (Opcional)</label>
             <Dropdown 
               id="owner_id" 
               v-model="leadForm.owner_id" 
               :options="owners" 
               optionLabel="name" 
-              optionValue="id"
+              optionValue="internal_user_id"
+              placeholder="Sin asignar"
+              showClear
               class="w-full"
             />
           </div>
@@ -1217,13 +1219,18 @@ const loadStats = async () => {
 
 const loadOwners = async () => {
   try {
-    if (!organizationsStore.currentOrganizationId) return;
+    if (!organizationsStore.currentOrganizationId) {
+      console.log('loadOwners: No organization ID');
+      return;
+    }
 
+    console.log('loadOwners: Fetching members for org:', organizationsStore.currentOrganizationId);
     const response = await apiClient.get('/organizations/' + organizationsStore.currentOrganizationId + '/members', {
       headers: {
         'X-Organization-ID': organizationsStore.currentOrganizationId
       }
     });
+    console.log('loadOwners: Response:', response.data);
     owners.value = response.data;
   } catch (error) {
     console.error('Error cargando propietarios:', error);
