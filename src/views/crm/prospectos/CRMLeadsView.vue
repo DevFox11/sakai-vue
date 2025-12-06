@@ -230,16 +230,27 @@
               <div
                 v-for="pipeline in pipelines"
                 :key="pipeline.id"
-                class="px-3 py-2 rounded-lg border cursor-pointer transition-all duration-200"
+                class="px-3 py-2 rounded-lg border cursor-pointer transition-all duration-200 group"
                 :class="{
                   'border-primary-500 bg-primary-50 dark:bg-primary-900/30 shadow-sm': selectedPipeline && selectedPipeline.id === pipeline.id,
                   'border-surface-200 dark:border-surface-700 hover:border-primary-300': !selectedPipeline || selectedPipeline.id !== pipeline.id
                 }"
                 @click="selectPipeline(pipeline)"
+                @contextmenu.prevent="togglePipelineMenu($event, pipeline)"
               >
                 <div class="flex items-center gap-2">
                   <span class="font-medium">{{ pipeline.name }}</span>
                   <span v-if="pipeline.is_default" class="text-xs bg-primary-100 text-primary-800 px-2 py-0.5 rounded-full">Por defecto</span>
+                  <Button
+                    icon="pi pi-ellipsis-v"
+                    @click.stop="togglePipelineMenu($event, pipeline)"
+                    severity="secondary"
+                    text
+                    rounded
+                    size="small"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity ml-1 !p-1"
+                    title="Opciones de pipeline"
+                  />
                 </div>
               </div>
               <Button
@@ -251,6 +262,9 @@
                 size="small"
                 title="Agregar nuevo pipeline"
               />
+              
+              <!-- Menu de opciones del pipeline -->
+              <Menu ref="pipelineMenu" :model="pipelineMenuItems" :popup="true" />
             </div>
           </div>
           
@@ -981,6 +995,45 @@ const stageDialogMode = ref('create');
 const pipelineDialog = ref(false);
 const pipelineDialogMode = ref('create');
 
+// ===== PIPELINE MENU =====
+const pipelineMenu = ref(null);
+const currentPipelineForMenu = ref(null);
+
+const pipelineMenuItems = computed(() => {
+  if (!currentPipelineForMenu.value) return [];
+  
+  const pipeline = currentPipelineForMenu.value;
+  const isDefault = pipeline.is_default;
+  
+  return [
+    {
+      label: 'Editar Pipeline',
+      icon: 'pi pi-pencil',
+      command: () => openEditPipelineDialog(pipeline)
+    },
+    {
+      separator: true
+    },
+    {
+      label: isDefault ? 'Eliminar Pipeline (Predeterminado)' : 'Eliminar Pipeline',
+      icon: 'pi pi-trash',
+      class: isDefault ? 'opacity-60' : 'text-red-500',
+      command: () => {
+        if (isDefault) {
+          toast.add({ 
+            severity: 'warn', 
+            summary: 'No permitido', 
+            detail: 'No se puede eliminar el pipeline predeterminado. Primero establezca otro pipeline como predeterminado.', 
+            life: 5000 
+          });
+        } else {
+          confirmDeletePipeline(pipeline);
+        }
+      }
+    }
+  ];
+});
+
 // ===== FORMS =====
 const leadForm = ref({
   id: null,
@@ -1497,6 +1550,100 @@ const savePipeline = async () => {
       severity: 'error',
       summary: 'Error',
       detail: error.response?.data?.detail || 'No se pudo guardar el pipeline',
+      life: 3000
+    });
+  }
+};
+
+// Toggle del menú de opciones del pipeline
+const togglePipelineMenu = (event, pipeline) => {
+  currentPipelineForMenu.value = pipeline;
+  pipelineMenu.value.toggle(event);
+};
+
+// Abrir diálogo para editar pipeline
+const openEditPipelineDialog = (pipeline) => {
+  pipelineDialogMode.value = 'edit';
+  pipelineForm.value = { 
+    id: pipeline.id,
+    name: pipeline.name,
+    description: pipeline.description || '',
+    is_default: pipeline.is_default,
+    is_active: pipeline.is_active
+  };
+  pipelineDialog.value = true;
+};
+
+// Confirmar eliminación de pipeline con condiciones
+const confirmDeletePipeline = async (pipeline) => {
+  // Condición 1: No permitir eliminar el pipeline predeterminado
+  if (pipeline.is_default) {
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Acción no permitida', 
+      detail: 'No se puede eliminar el pipeline predeterminado. Primero establezca otro pipeline como predeterminado.', 
+      life: 5000 
+    });
+    return;
+  }
+
+  try {
+    // Obtener las etapas del pipeline para verificar condiciones
+    const pipelineStages = await crmService.getPipelineStages(pipeline.id, organizationsStore.currentOrganizationId);
+    
+    // Contar leads en las etapas del pipeline
+    let totalLeadsInPipeline = 0;
+    if (pipelineStages.length > 0) {
+      for (const stage of pipelineStages) {
+        const leadsInStage = leads.value.filter(lead => lead.stage_id === stage.id).length;
+        totalLeadsInPipeline += leadsInStage;
+      }
+    }
+
+    // Construir mensaje de advertencia según las condiciones
+    let warningMessage = `¿Está seguro que desea eliminar el pipeline "${pipeline.name}"?`;
+    
+    if (totalLeadsInPipeline > 0) {
+      warningMessage = `Este pipeline tiene ${pipelineStages.length} etapa(s) con ${totalLeadsInPipeline} lead(s) asociados. Al eliminarlo, los leads quedarán sin etapa asignada. ¿Está seguro que desea eliminar el pipeline "${pipeline.name}"?`;
+    } else if (pipelineStages.length > 0) {
+      warningMessage = `Este pipeline tiene ${pipelineStages.length} etapa(s) configuradas. ¿Está seguro que desea eliminar el pipeline "${pipeline.name}"?`;
+    }
+
+    confirm.require({
+      message: warningMessage,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptClass: 'p-button-danger',
+      accept: async () => {
+        try {
+          await crmService.deletePipeline(pipeline.id, organizationsStore.currentOrganizationId);
+          toast.add({ severity: 'success', summary: 'Éxito', detail: 'Pipeline eliminado', life: 3000 });
+
+          // Si el pipeline eliminado era el seleccionado, limpiar la selección
+          if (selectedPipeline.value && selectedPipeline.value.id === pipeline.id) {
+            selectedPipeline.value = null;
+            stages.value = [];
+          }
+
+          await loadPipelines();
+          await loadLeads(); // Recargar leads para actualizar referencias
+        } catch (error) {
+          console.error('Error eliminando pipeline:', error);
+          toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.response?.data?.detail || 'No se pudo eliminar el pipeline',
+            life: 3000
+          });
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error verificando condiciones del pipeline:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudieron verificar las condiciones del pipeline',
       life: 3000
     });
   }
