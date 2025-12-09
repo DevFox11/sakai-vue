@@ -444,7 +444,7 @@
         </div>
         
         <!-- Kanban Board -->
-        <div v-else class="flex gap-4 overflow-x-auto p-4" style="min-height: 600px;">
+        <div v-else class="flex gap-4 overflow-x-auto p-4" style="height: calc(100vh - 16rem);">
           <div 
             v-for="stage in stages" 
             :key="stage.id" 
