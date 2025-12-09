@@ -340,12 +340,26 @@
               </Select>
             </template>
           </Column>
-          
+
+          <Column field="pipeline_name" header="Pipeline" style="min-width: 10rem" sortable>
+            <template #body="{ data }">
+              {{ data.pipeline_name || '-' }}
+            </template>
+            <template #filter="{ filterModel }">
+              <Select 
+                v-model="filterModel.value" 
+                :options="pipelines" 
+                optionLabel="name" 
+                optionValue="name"
+                placeholder="Seleccionar" 
+                showClear
+              />
+            </template>
+          </Column>
+
           <Column field="stage_id" header="Etapa" :filterMenuStyle="{ width: '14rem' }" style="min-width: 10rem" sortable>
             <template #body="{ data }">
-              <span class="p-tag" :style="{ backgroundColor: data.stage_color || '#6b7280' }">
-                {{ data.stage_name }}
-              </span>
+              <Tag :value="data.stage_name || '-'" severity="secondary" />
             </template>
             <template #filter="{ filterModel }">
               <Select 
@@ -357,9 +371,7 @@
                 showClear
               >
                 <template #option="slotProps">
-                  <span class="p-tag" :style="{ backgroundColor: slotProps.option.color || '#6b7280' }">
-                    {{ slotProps.option.name }}
-                  </span>
+                  <Tag :value="slotProps.option.name" severity="secondary" />
                 </template>
               </Select>
             </template>
@@ -743,7 +755,7 @@
             <Dropdown 
               id="stage_id" 
               v-model="leadForm.stage_id" 
-              :options="stages" 
+              :options="dialogStages" 
               optionLabel="name" 
               optionValue="id"
               class="w-full"
@@ -967,6 +979,8 @@ const stats = ref({
 const pipelines = ref([]);
 const selectedPipeline = ref(null);
 const stages = ref([]);
+const allStages = ref([]); // Lista completa de etapas para mapeo
+const dialogStages = ref([]); // Etapas filtradas para el diálogo
 const owners = ref([]);
 
 // ===== FILTERS =====
@@ -977,6 +991,7 @@ const leadsFilters = ref({
   company: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
   status: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
   stage_id: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+  pipeline_name: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
   owner_id: { operator: FilterOperator.OR, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] }
 });
 
@@ -1122,6 +1137,15 @@ onMounted(async () => {
   await loadPipelines();
   await loadStats();
   await loadOwners();
+  
+  // Cargar todas las etapas para tener referencia completa
+  try {
+    const allStagesData = await crmService.getAllStages(organizationsStore.currentOrganizationId);
+    allStages.value = allStagesData;
+  } catch (error) {
+    console.error('Error cargando todas las etapas:', error);
+  }
+
   await loadLeads();
 });
 
@@ -1162,7 +1186,34 @@ const loadLeads = async () => {
     if (!organizationsStore.currentOrganizationId) return;
 
     const response = await crmService.getLeads(organizationsStore.currentOrganizationId);
-    leads.value = response;
+    
+    // Enriquecer leads con nombres de etapa y propietario
+    leads.value = response.map(lead => {
+      // Buscar la etapa correspondiente (usar allStages si está disponible, sino stages)
+      const stageId = Number(lead.stage_id);
+      const stage = allStages.value.length > 0 
+        ? allStages.value.find(s => Number(s.id) === stageId)
+        : stages.value.find(s => Number(s.id) === stageId);
+      
+      // Buscar el pipeline correspondiente
+      let pipelineName = '-';
+      if (stage && stage.pipeline_id) {
+        const pipeline = pipelines.value.find(p => p.id === stage.pipeline_id);
+        if (pipeline) pipelineName = pipeline.name;
+      }
+      
+      // Buscar el propietario correspondiente (usar internal_user_id que coincide con owner_id)
+      const ownerId = Number(lead.owner_id);
+      const owner = owners.value.find(o => Number(o.internal_user_id) === ownerId);
+      
+      return {
+        ...lead,
+        stage_name: stage ? stage.name : '-',
+        stage_color: stage ? stage.color : '#6b7280',
+        pipeline_name: pipelineName,
+        owner_name: owner ? owner.name : '-'
+      };
+    });
   } catch (error) {
     console.error('Error cargando leads:', error);
     toast.add({
@@ -1220,17 +1271,14 @@ const loadStats = async () => {
 const loadOwners = async () => {
   try {
     if (!organizationsStore.currentOrganizationId) {
-      console.log('loadOwners: No organization ID');
       return;
     }
 
-    console.log('loadOwners: Fetching members for org:', organizationsStore.currentOrganizationId);
     const response = await apiClient.get('/organizations/' + organizationsStore.currentOrganizationId + '/members', {
       headers: {
         'X-Organization-ID': organizationsStore.currentOrganizationId
       }
     });
-    console.log('loadOwners: Response:', response.data);
     owners.value = response.data;
   } catch (error) {
     console.error('Error cargando propietarios:', error);
@@ -1329,8 +1377,13 @@ const selectPipeline = async (pipeline) => {
 };
 
 // ===== DIALOG HANDLERS =====
+// ===== DIALOG HANDLERS =====
 const openCreateLeadDialog = () => {
   leadDialogMode.value = 'create';
+  
+  // Para nuevo lead, usamos los stages del pipeline seleccionado actual
+  dialogStages.value = stages.value;
+
   leadForm.value = {
     id: null,
     name: '',
@@ -1348,6 +1401,16 @@ const openCreateLeadDialog = () => {
 
 const openCreateLeadDialogForStage = (stageId) => {
   leadDialogMode.value = 'create';
+  
+  // Buscar a qué pipeline pertenece esta etapa
+  const stage = allStages.value.find(s => s.id === stageId);
+  if (stage && stage.pipeline_id) {
+    dialogStages.value = allStages.value.filter(s => s.pipeline_id === stage.pipeline_id).sort((a, b) => a.order_pos - b.order_pos);
+  } else {
+    // Fallback al pipeline actual
+    dialogStages.value = stages.value;
+  }
+
   leadForm.value = {
     id: null,
     name: '',
@@ -1365,6 +1428,20 @@ const openCreateLeadDialogForStage = (stageId) => {
 
 const editLead = (lead) => {
   leadDialogMode.value = 'edit';
+  
+  // Buscar a qué pipeline pertenece el lead (basado en su etapa)
+  if (lead.stage_id) {
+    const stage = allStages.value.find(s => Number(s.id) === Number(lead.stage_id));
+    if (stage && stage.pipeline_id) {
+      dialogStages.value = allStages.value.filter(s => s.pipeline_id === stage.pipeline_id).sort((a, b) => a.order_pos - b.order_pos);
+    } else {
+      // Si no encontramos la etapa, intentamos fallback a etapas cargadas actualmente
+      dialogStages.value = stages.value;
+    }
+  } else {
+    dialogStages.value = stages.value;
+  }
+
   leadForm.value = { ...lead };
   leadDialog.value = true;
 };
@@ -1379,11 +1456,20 @@ const hideLeadDialog = () => {
 
 const saveLead = async () => {
   try {
+    // Extraer solo los campos válidos para el backend (excluir campos que no existen en la tabla)
+    const { 
+      stage_name, stage_color, owner_name,  // campos calculados frontend
+      id, organization_id, created_at, updated_at,  // campos de sistema que no deben actualizarse
+      tags, source,  // campos relacionados que no van en el update directo
+      custom_fields, source_id,  // campos que no existen en la tabla de Supabase
+      ...leadData 
+    } = leadForm.value;
+    
     if (leadDialogMode.value === 'create') {
-      await crmService.createLead(leadForm.value, organizationsStore.currentOrganizationId);
+      await crmService.createLead(leadData, organizationsStore.currentOrganizationId);
       toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead creado', life: 3000 });
     } else {
-      await crmService.updateLead(leadForm.value.id, leadForm.value, organizationsStore.currentOrganizationId);
+      await crmService.updateLead(leadForm.value.id, leadData, organizationsStore.currentOrganizationId);
       toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead actualizado', life: 3000 });
     }
 

@@ -70,6 +70,16 @@ const crmService = {
         return response.data;
     },
 
+    // Obtener todas las etapas de la organización (para búsquedas y filtros)
+    async getAllStages(organizationId) {
+        const response = await apiClient.get('/leads/stages/', {
+            headers: {
+                'X-Organization-ID': organizationId
+            }
+        });
+        return response.data;
+    },
+
     /**
      * Leads
      */
