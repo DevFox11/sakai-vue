@@ -181,10 +181,7 @@ const crmService = {
 
     // Mover un lead a una nueva etapa
     async moveLead(leadId, stageId, organizationId) {
-        const response = await apiClient.put('/leads/move', {
-            lead_id: leadId,
-            stage_id: stageId
-        }, {
+        const response = await apiClient.put(`/leads/${leadId}/move/${stageId}`, {}, {
             headers: {
                 'X-Organization-ID': organizationId
             }

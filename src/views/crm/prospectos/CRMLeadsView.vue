@@ -1337,11 +1337,13 @@ const onDrop = async (event, newStageId) => {
     return;
   }
 
+  const draggedLeadId = draggedLead.value.id;
+
   try {
-    await crmService.moveLead(draggedLead.value.id, newStageId, organizationsStore.currentOrganizationId);
+    await crmService.moveLead(draggedLeadId, newStageId, organizationsStore.currentOrganizationId);
     
     // Update locally
-    const leadIndex = leads.value.findIndex(l => l.id === draggedLead.value.id);
+    const leadIndex = leads.value.findIndex(l => l.id === draggedLeadId);
     if (leadIndex !== -1) {
       leads.value[leadIndex].stage_id = newStageId;
       
