@@ -931,6 +931,15 @@
       </form>
     </Dialog>
     
+    <!-- Modal de detalle de lead -->
+    <LeadDetailModal
+      v-model:visible="leadDetailModalVisible"
+      :leadId="selectedLeadId"
+      @lead-updated="handleLeadUpdated"
+      @lead-deleted="handleLeadDeleted"
+      @edit-lead="editLead"
+    />
+
     <!-- Confirmación de eliminación -->
     <ConfirmDialog></ConfirmDialog>
   </div>
@@ -943,6 +952,7 @@ import { useConfirm } from 'primevue/useconfirm';
 import { useRouter } from 'vue-router';
 import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
 import crmService from '@/service/crm/crmService';
+import LeadDetailModal from './LeadDetailModal.vue';
 import apiClient from '@/api/axios';
 import { useOrganizationsStore } from '@/stores/organizations';
 
@@ -1011,6 +1021,10 @@ const stageDialog = ref(false);
 const stageDialogMode = ref('create');
 const pipelineDialog = ref(false);
 const pipelineDialogMode = ref('create');
+
+// ===== LEAD DETAIL MODAL =====
+const leadDetailModalVisible = ref(false);
+const selectedLeadId = ref(null);
 
 // ===== PIPELINE MENU =====
 const pipelineMenu = ref(null);
@@ -1449,7 +1463,19 @@ const editLead = (lead) => {
 };
 
 const viewLead = (lead) => {
-  router.push(`/leads/${lead.id}`);
+  selectedLeadId.value = lead.id;
+  leadDetailModalVisible.value = true;
+};
+
+const handleLeadUpdated = async () => {
+  await loadLeads();
+  await loadStats();
+};
+
+const handleLeadDeleted = async () => {
+  leadDetailModalVisible.value = false;
+  await loadLeads();
+  await loadStats();
 };
 
 const hideLeadDialog = () => {
