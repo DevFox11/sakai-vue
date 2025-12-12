@@ -16,8 +16,8 @@
   </div>
 
   <div v-else class="grid grid-cols-12 gap-6">
-    <!-- Teleport de controles al Topbar -->
-    <Teleport to="#topbar-content">
+    <!-- Teleport de controles al Topbar (solo cuando el componente está montado) -->
+    <Teleport v-if="isMounted" to="#topbar-content">
       <div class="flex items-center gap-4 w-full">
         <!-- Título de la vista -->
         <div class="flex items-center gap-2">
@@ -86,133 +86,63 @@
         <!-- Contenido colapsable -->
         <Transition name="stats-collapse">
           <div v-show="showStats" class="border-t border-surface-200 dark:border-surface-700">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-0">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-0">
               
               <!-- Total Leads -->
-              <div class="stat-card border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
-                <div class="stat-content">
-                  <div class="stat-icon bg-gradient-to-br from-blue-500 to-blue-600">
-                    <i class="pi pi-list"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Total Leads</span>
-                    <span class="stat-value">{{ stats.totalLeads }}</span>
-                    <div class="stat-sparkline">
-                      <svg viewBox="0 0 60 20" class="sparkline-svg">
-                        <polyline points="0,15 10,12 20,14 30,8 40,10 50,5 60,7" fill="none" stroke="currentColor" stroke-width="2"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
+                <span class="stat-label-simple">Total Leads</span>
+                <span class="stat-value-simple">{{ stats.totalLeads }}</span>
+                <span class="stat-detail text-surface-400">en el sistema</span>
               </div>
 
               <!-- Nuevos Hoy -->
-              <div class="stat-card border-b lg:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
-                <div class="stat-content">
-                  <div class="stat-icon bg-gradient-to-br from-green-500 to-green-600">
-                    <i class="pi pi-calendar-plus"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Nuevos Hoy</span>
-                    <span class="stat-value">{{ stats.newToday }}</span>
-                    <div class="stat-trend up">
-                      <i class="pi pi-arrow-up"></i>
-                      <span>+{{ stats.newToday > 0 ? Math.round((stats.newToday / Math.max(stats.totalLeads, 1)) * 100) : 0 }}%</span>
-                    </div>
-                  </div>
-                </div>
+              <div class="stat-card-simple border-b lg:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
+                <span class="stat-label-simple">Nuevos Hoy</span>
+                <span class="stat-value-simple text-green-600 dark:text-green-400">+{{ stats.newToday }}</span>
+                <span class="stat-detail text-green-500">{{ stats.newToday > 0 ? Math.round((stats.newToday / Math.max(stats.totalLeads, 1)) * 100) : 0 }}% del total</span>
               </div>
 
               <!-- Contactados -->
-              <div class="stat-card border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
-                <div class="stat-content">
-                  <div class="stat-icon bg-gradient-to-br from-indigo-500 to-indigo-600">
-                    <i class="pi pi-comments"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Contactados</span>
-                    <span class="stat-value">{{ stats.contacted }}</span>
-                    <div class="stat-sparkline">
-                      <svg viewBox="0 0 60 20" class="sparkline-svg text-indigo-500">
-                        <polyline points="0,18 10,15 20,12 30,10 40,8 50,6 60,4" fill="none" stroke="currentColor" stroke-width="2"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
+                <span class="stat-label-simple">Contactados</span>
+                <span class="stat-value-simple text-indigo-600 dark:text-indigo-400">{{ stats.contacted }}</span>
+                <span class="stat-detail text-indigo-500">{{ stats.totalLeads > 0 ? Math.round((stats.contacted / stats.totalLeads) * 100) : 0 }}% de leads</span>
               </div>
 
               <!-- Oportunidades -->
-              <div class="stat-card border-b lg:border-b-0 lg:border-r border-surface-200 dark:border-surface-700">
-                <div class="stat-content">
-                  <div class="stat-icon bg-gradient-to-br from-orange-500 to-orange-600">
-                    <i class="pi pi-star"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Oportunidades</span>
-                    <span class="stat-value">{{ stats.opportunities }}</span>
-                    <div class="stat-trend up">
-                      <i class="pi pi-arrow-up"></i>
-                      <span>Activas</span>
-                    </div>
-                  </div>
-                </div>
+              <div class="stat-card-simple border-b lg:border-b-0 lg:border-r border-surface-200 dark:border-surface-700">
+                <span class="stat-label-simple">Oportunidades</span>
+                <span class="stat-value-simple text-orange-600 dark:text-orange-400">{{ stats.opportunities }}</span>
+                <span class="stat-detail text-orange-500">activas</span>
               </div>
 
               <!-- Valor del Pipeline -->
-              <div class="stat-card border-b sm:border-r border-surface-200 dark:border-surface-700 xl:border-b-0">
-                <div class="stat-content">
-                  <div class="stat-icon bg-gradient-to-br from-emerald-500 to-emerald-600">
-                    <i class="pi pi-dollar"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Valor Pipeline</span>
-                    <span class="stat-value text-emerald-600 dark:text-emerald-400">${{ formatPipelineValue(stats.pipelineValue || 0) }}</span>
-                    <div class="stat-sparkline">
-                      <svg viewBox="0 0 60 20" class="sparkline-svg text-emerald-500">
-                        <polyline points="0,16 10,14 20,10 30,12 40,6 50,8 60,3" fill="none" stroke="currentColor" stroke-width="2"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 xl:border-b-0">
+                <span class="stat-label-simple">Valor Pipeline</span>
+                <span class="stat-value-simple text-emerald-600 dark:text-emerald-400">${{ formatPipelineValue(stats.pipelineValue || 0) }}</span>
+                <span class="stat-detail text-emerald-500">valor estimado</span>
               </div>
 
               <!-- Tasa de Conversión -->
-              <div class="stat-card border-b xl:border-b-0 xl:border-r border-surface-200 dark:border-surface-700">
-                <div class="stat-content">
-                  <div class="stat-icon bg-gradient-to-br from-purple-500 to-purple-600">
-                    <i class="pi pi-percentage"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Conversión</span>
-                    <span class="stat-value">{{ calculateConversionRate() }}%</span>
-                    <div class="stat-progress">
-                      <div class="progress-bar">
-                        <div class="progress-fill bg-purple-500" :style="{ width: calculateConversionRate() + '%' }"></div>
-                      </div>
-                    </div>
+              <div class="stat-card-simple border-b xl:border-b-0 xl:border-r border-surface-200 dark:border-surface-700">
+                <span class="stat-label-simple">Conversión</span>
+                <span class="stat-value-simple text-purple-600 dark:text-purple-400">{{ calculateConversionRate() }}%</span>
+                <div class="w-full mt-1">
+                  <div class="h-1 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-purple-500 rounded-full transition-all" :style="{ width: calculateConversionRate() + '%' }"></div>
                   </div>
                 </div>
               </div>
 
               <!-- Leads Pendientes -->
-              <div class="stat-card">
-                <div class="stat-content">
-                  <div class="stat-icon bg-gradient-to-br from-rose-500 to-rose-600">
-                    <i class="pi pi-clock"></i>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-label">Pendientes</span>
-                    <span class="stat-value">{{ stats.pending || (stats.totalLeads - stats.contacted) }}</span>
-                    <div class="stat-trend down" v-if="(stats.pending || (stats.totalLeads - stats.contacted)) > 5">
-                      <i class="pi pi-exclamation-triangle"></i>
-                      <span>Atención</span>
-                    </div>
-                    <div class="stat-trend up" v-else>
-                      <i class="pi pi-check"></i>
-                      <span>OK</span>
-                    </div>
-                  </div>
-                </div>
+              <div class="stat-card-simple">
+                <span class="stat-label-simple">Pendientes</span>
+                <span class="stat-value-simple" :class="(stats.pending || (stats.totalLeads - stats.contacted)) > 5 ? 'text-rose-600 dark:text-rose-400' : 'text-surface-600 dark:text-surface-300'">
+                  {{ stats.pending || (stats.totalLeads - stats.contacted) }}
+                </span>
+                <span class="stat-detail" :class="(stats.pending || (stats.totalLeads - stats.contacted)) > 5 ? 'text-rose-500' : 'text-green-500'">
+                  {{ (stats.pending || (stats.totalLeads - stats.contacted)) > 5 ? 'requieren atención' : 'todo en orden' }}
+                </span>
               </div>
               
             </div>
@@ -317,7 +247,7 @@
             >
               <div class="flex flex-col gap-1 min-w-0 flex-1">
                 <div class="flex items-center gap-2">
-                  <h3 class="font-semibold text-sm text-surface-800 dark:text-surface-100 truncate" :title="stage.name">{{ stage.name }}</h3>
+                  <h3 class="font-semibold text-xs text-surface-800 dark:text-surface-100 truncate" :title="stage.name">{{ stage.name }}</h3>
                   <span 
                     class="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
                     :style="{ 
@@ -362,7 +292,7 @@
                 @dragend="onDragEnd"
               >
                 <div class="flex justify-between items-start mb-2">
-                  <h4 class="font-medium text-surface-900 dark:text-surface-0 text-sm">{{ lead.name }}</h4>
+                  <h4 class="font-medium text-surface-900 dark:text-surface-0 text-xs">{{ lead.name }}</h4>
                   <Tag :value="lead.status" :severity="getStatusSeverity(lead.status)" class="text-xs" />
                 </div>
                 
@@ -953,7 +883,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import { useRouter } from 'vue-router';
@@ -962,6 +892,9 @@ import crmService from '@/service/crm/crmService';
 import LeadDetailModal from './LeadDetailModal.vue';
 import apiClient from '@/api/axios';
 import { useOrganizationsStore } from '@/stores/organizations';
+
+// ===== TOPBAR TELEPORT =====
+const isMounted = ref(false);
 
 const router = useRouter();
 const toast = useToast();
@@ -1145,6 +1078,9 @@ const getStageMenuItems = (stage) => {
 
 // ===== LIFECYCLE =====
 onMounted(async () => {
+  // Marcar como montado para habilitar Teleport
+  isMounted.value = true;
+  
   if (!organizationsStore.currentOrganizationId) {
     toast.add({
       severity: 'error',
@@ -1169,6 +1105,12 @@ onMounted(async () => {
 
   await loadLeads();
 });
+
+// Limpiar topbar cuando el componente se desmonte
+onBeforeUnmount(() => {
+  isMounted.value = false;
+});
+
 
 // ===== DATA LOADING =====
 const loadPipelines = async () => {
@@ -2086,7 +2028,45 @@ const getStatusSeverity = (status) => {
   color: #ef4444 !important;
 }
 
-/* ========== ESTADÍSTICAS MEJORADAS ========== */
+/* ========== ESTADÍSTICAS SIMPLIFICADAS ========== */
+.stat-card-simple {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.stat-card-simple:hover {
+  background: var(--surface-50);
+}
+
+.dark .stat-card-simple:hover {
+  background: var(--surface-800);
+}
+
+.stat-label-simple {
+  font-size: 0.75rem; /* 12px */
+  color: var(--text-color-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value-simple {
+  font-size: 1.75rem; /* 28px - más grande y prominente */
+  font-weight: 700;
+  color: var(--text-color);
+  line-height: 1.2;
+}
+
+.stat-detail {
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* Mantener compatibilidad con estilos anteriores */
 .stat-card {
   padding: 1rem;
   transition: background-color 0.2s;
