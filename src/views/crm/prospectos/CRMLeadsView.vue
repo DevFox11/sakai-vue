@@ -16,53 +16,54 @@
   </div>
 
   <div v-else class="grid grid-cols-12 gap-6">
-    <!-- Header de Gestión -->
-    <div class="col-span-12">
-      <div class="card mb-0">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div class="flex items-center gap-3">
-            <div>
-              <h2 class="text-xl font-bold text-surface-900 dark:text-white m-0">Gestión de Leads</h2>
-              <p class="text-sm text-surface-500 m-0">Administra y da seguimiento a tus prospectos</p>
-            </div>
-          </div>
+    <!-- Teleport de controles al Topbar -->
+    <Teleport to="#topbar-content">
+      <div class="flex items-center gap-4 w-full">
+        <!-- Título de la vista -->
+        <div class="flex items-center gap-2">
+          <i class="pi pi-users text-lg text-primary-500"></i>
+          <span class="font-semibold text-surface-900 dark:text-white">Leads</span>
+        </div>
+        
+        <div class="flex-1"></div>
+        
+        <!-- Controles -->
+        <div class="flex flex-wrap gap-2 items-center">
+          <!-- Toggle Vista -->
+          <SelectButton
+            v-model="viewMode"
+            :options="viewModeOptions"
+            optionLabel="label"
+            optionValue="value"
+            :allowEmpty="false"
+          >
+            <template #option="slotProps">
+              <i :class="slotProps.option.icon" class="mr-2"></i>
+              <span>{{ slotProps.option.label }}</span>
+            </template>
+          </SelectButton>
           
-          <div class="flex flex-wrap gap-2 items-center">
-            <!-- Toggle Vista -->
-            <SelectButton
-              v-model="viewMode"
-              :options="viewModeOptions"
-              optionLabel="label"
-              optionValue="value"
-              :allowEmpty="false"
-            >
-              <template #option="slotProps">
-                <i :class="slotProps.option.icon" class="mr-2"></i>
-                <span>{{ slotProps.option.label }}</span>
-              </template>
-            </SelectButton>
-            
-            <Button
-              label="Nuevo Lead"
-              icon="pi pi-plus"
-              @click="openCreateLeadDialog"
-              severity="primary"
-              size="small"
-            />
-            <Button
-              v-if="viewMode === 'table'"
-              label="Filtros Avanzados"
-              icon="pi pi-filter"
-              @click="toggleAdvancedFilters"
-              severity="secondary"
-              outlined
-              size="small"
-              :class="{ 'bg-primary-50 border-primary-200 text-primary-700': showAdvancedFilters }"
-            />
-          </div>
+          <Button
+            label="Nuevo Lead"
+            icon="pi pi-plus"
+            @click="openCreateLeadDialog"
+            severity="primary"
+            size="small"
+          />
+          <Button
+            v-if="viewMode === 'table'"
+            label="Filtros Avanzados"
+            icon="pi pi-filter"
+            @click="toggleAdvancedFilters"
+            severity="secondary"
+            outlined
+            size="small"
+            :class="{ 'bg-primary-50 border-primary-200 text-primary-700': showAdvancedFilters }"
+          />
         </div>
       </div>
-    </div>
+    </Teleport>
+
 
     <!-- Estadísticas Mejoradas con Toggle -->
     <div class="col-span-12">
@@ -220,10 +221,11 @@
       </div>
     </div>
 
-    <!-- Pipeline Selector (for Kanban view) -->
+    <!-- Pipeline Selector + Kanban unificados -->
     <div v-if="viewMode === 'kanban'" class="col-span-12">
-      <div class="card mb-0">
-        <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="card p-0 overflow-hidden">
+        <!-- Pipeline Selector Header -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-surface-200 dark:border-surface-700">
           <div class="flex flex-wrap items-center gap-3">
             <label class="text-sm font-medium text-surface-700 dark:text-surface-300">Pipeline:</label>
             <div class="flex flex-wrap gap-2">
@@ -257,10 +259,11 @@
                 icon="pi pi-plus"
                 @click="openCreatePipelineDialog"
                 severity="secondary"
-                text
+                outlined
                 rounded
                 size="small"
                 title="Agregar nuevo pipeline"
+                class="!border-dashed"
               />
               
               <!-- Menu de opciones del pipeline -->
@@ -277,6 +280,143 @@
             size="small"
             :disabled="!selectedPipeline"
           />
+        </div>
+        
+        <!-- Kanban Board Content -->
+        <div v-if="stages.length === 0" class="text-center py-12 text-surface-500">
+          <i class="pi pi-inbox text-5xl mb-4 block"></i>
+          <p class="text-lg">No hay etapas configuradas para este pipeline.</p>
+          <Button 
+            label="Crear Primera Etapa" 
+            icon="pi pi-plus" 
+            @click="openCreateStageDialog" 
+            severity="primary"
+            class="mt-4"
+          />
+        </div>
+        
+        <!-- Kanban Board -->
+        <div v-else class="flex gap-4 overflow-x-auto p-4" style="height: calc(100vh - 20rem);">
+          <div 
+            v-for="stage in stages" 
+            :key="stage.id" 
+            class="flex-shrink-0 w-80 bg-surface-100 dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 flex flex-col transition-all duration-200"
+            :class="{ 'ring-2 ring-primary-500 bg-primary-50 dark:bg-primary-900/30': dragOverStageId === stage.id }"
+            @dragover.prevent
+            @dragenter.prevent="onDragEnter($event, stage.id)"
+            @dragleave="onDragLeave($event)"
+            @drop="onDrop($event, stage.id)"
+          >
+            <!-- Column Header -->
+            <div 
+              class="flex justify-between items-center p-4 rounded-t-xl border-b"
+              :style="{ 
+                backgroundColor: formatColor(stage.color) + '20',
+                borderColor: formatColor(stage.color) + '40'
+              }"
+            >
+              <div class="flex flex-col gap-1 min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold text-sm text-surface-800 dark:text-surface-100 truncate" :title="stage.name">{{ stage.name }}</h3>
+                  <span 
+                    class="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
+                    :style="{ 
+                      backgroundColor: formatColor(stage.color) + '30',
+                      color: formatColor(stage.color)
+                    }"
+                  >
+                    {{ getLeadsByStage(stage.id).length }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex-shrink-0 ml-2">
+                <Button 
+                  icon="pi pi-ellipsis-v" 
+                  severity="secondary" 
+                  text 
+                  rounded 
+                  size="small"
+                  @click="toggleStageMenu($event, stage)"
+                  :aria-controls="'stage_menu_' + stage.id"
+                  aria-haspopup="true"
+                />
+                <Menu 
+                  :ref="el => stageMenuRefs[stage.id] = el" 
+                  :id="'stage_menu_' + stage.id" 
+                  :model="getStageMenuItems(stage)" 
+                  :popup="true"
+                  class="rounded-xl"
+                />
+              </div>
+            </div>
+            
+            <!-- Column Content -->
+            <div class="flex-1 p-3 overflow-y-auto flex flex-col gap-3">
+              <div 
+                v-for="lead in getLeadsByStage(stage.id)" 
+                :key="lead.id"
+                class="bg-surface-0 dark:bg-surface-900 rounded-lg p-3 cursor-grab border border-surface-200 dark:border-surface-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                :class="{ 'opacity-50 rotate-1': draggedLead && draggedLead.id === lead.id }"
+                draggable="true"
+                @dragstart="onDragStart($event, lead)"
+                @dragend="onDragEnd"
+              >
+                <div class="flex justify-between items-start mb-2">
+                  <h4 class="font-medium text-surface-900 dark:text-surface-0 text-sm">{{ lead.name }}</h4>
+                  <Tag :value="lead.status" :severity="getStatusSeverity(lead.status)" class="text-xs" />
+                </div>
+                
+                <div class="space-y-1 text-xs text-surface-500 dark:text-surface-400">
+                  <div v-if="lead.company" class="flex items-center gap-1">
+                    <i class="pi pi-building"></i>
+                    <span>{{ lead.company }}</span>
+                  </div>
+                  <div v-if="lead.email" class="flex items-center gap-1">
+                    <i class="pi pi-envelope"></i>
+                    <span class="truncate">{{ lead.email }}</span>
+                  </div>
+                  <div v-if="lead.estimated_value" class="flex items-center gap-1">
+                    <i class="pi pi-dollar"></i>
+                    <span class="font-medium text-green-600 dark:text-green-400">${{ formatCurrency(lead.estimated_value) }}</span>
+                  </div>
+                </div>
+                
+                <div class="flex justify-between items-center mt-3 pt-2 border-t border-surface-200 dark:border-surface-700">
+                  <div class="flex items-center gap-1 text-xs text-surface-400 dark:text-surface-500">
+                    <i class="pi pi-calendar"></i>
+                    <span>{{ formatDate(lead.created_at) }}</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <Button 
+                      icon="pi pi-eye" 
+                      severity="secondary" 
+                      text 
+                      rounded 
+                      size="small"
+                      @click="viewLead(lead)"
+                    />
+                    <Button 
+                      icon="pi pi-pencil" 
+                      severity="info" 
+                      text 
+                      rounded 
+                      size="small"
+                      @click="editLead(lead)"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Empty state for column -->
+              <div 
+                v-if="getLeadsByStage(stage.id).length === 0" 
+                class="flex flex-col items-center justify-center py-8 text-surface-400 dark:text-surface-500"
+              >
+                <i class="pi pi-inbox text-2xl mb-2"></i>
+                <span>Sin leads</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -428,139 +568,6 @@
       </div>
     </div>
 
-    <!-- Vista Kanban -->
-    <div v-if="viewMode === 'kanban'" class="col-span-12">
-      <div class="card p-0 overflow-hidden">
-        <div v-if="stages.length === 0" class="text-center py-12 text-surface-500">
-          <i class="pi pi-inbox text-5xl mb-4 block"></i>
-          <p class="text-lg">No hay etapas configuradas para este pipeline.</p>
-          <Button 
-            label="Crear Primera Etapa" 
-            icon="pi pi-plus" 
-            @click="openCreateStageDialog" 
-            severity="primary"
-            class="mt-4"
-          />
-        </div>
-        
-        <!-- Kanban Board -->
-        <div v-else class="flex gap-4 overflow-x-auto p-4" style="height: calc(100vh - 16rem);">
-          <div 
-            v-for="stage in stages" 
-            :key="stage.id" 
-            class="flex-shrink-0 w-80 bg-surface-100 dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 flex flex-col transition-all duration-200"
-            :class="{ 'ring-2 ring-primary-500 bg-primary-50 dark:bg-primary-900/30': dragOverStageId === stage.id }"
-            @dragover.prevent
-            @dragenter.prevent="onDragEnter($event, stage.id)"
-            @dragleave="onDragLeave($event)"
-            @drop="onDrop($event, stage.id)"
-          >
-            <!-- Column Header -->
-            <div 
-              class="flex justify-between items-center p-4 bg-surface-0 dark:bg-surface-900 rounded-t-xl border-b border-surface-200 dark:border-surface-700"
-              :style="{ borderTopWidth: '4px', borderTopStyle: 'solid', borderTopColor: formatColor(stage.color) }"
-            >
-              <div class="flex items-center gap-2 min-w-0 flex-1">
-                <span 
-                  class="w-3 h-3 rounded-full flex-shrink-0" 
-                  :style="{ backgroundColor: formatColor(stage.color) }"
-                ></span>
-                <h3 class="font-semibold text-sm text-surface-700 dark:text-surface-0 truncate" :title="stage.name">{{ stage.name }}</h3>
-                <span class="bg-surface-200 dark:bg-surface-700 text-surface-600 dark:text-surface-300 text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0">
-                  {{ getLeadsByStage(stage.id).length }}
-                </span>
-              </div>
-              <div class="flex-shrink-0 ml-2">
-                <Button 
-                  icon="pi pi-ellipsis-v" 
-                  severity="secondary" 
-                  text 
-                  rounded 
-                  size="small"
-                  @click="toggleStageMenu($event, stage)"
-                  :aria-controls="'stage_menu_' + stage.id"
-                  aria-haspopup="true"
-                />
-                <Menu 
-                  :ref="el => stageMenuRefs[stage.id] = el" 
-                  :id="'stage_menu_' + stage.id" 
-                  :model="getStageMenuItems(stage)" 
-                  :popup="true"
-                  class="rounded-xl"
-                />
-              </div>
-            </div>
-            
-            <!-- Column Content -->
-            <div class="flex-1 p-3 overflow-y-auto flex flex-col gap-3">
-              <div 
-                v-for="lead in getLeadsByStage(stage.id)" 
-                :key="lead.id"
-                class="bg-surface-0 dark:bg-surface-900 rounded-lg p-3 cursor-grab border border-surface-200 dark:border-surface-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-                :class="{ 'opacity-50 rotate-1': draggedLead && draggedLead.id === lead.id }"
-                draggable="true"
-                @dragstart="onDragStart($event, lead)"
-                @dragend="onDragEnd"
-              >
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="font-medium text-surface-900 dark:text-surface-0 text-sm">{{ lead.name }}</h4>
-                  <Tag :value="lead.status" :severity="getStatusSeverity(lead.status)" class="text-xs" />
-                </div>
-                
-                <div class="space-y-1 text-xs text-surface-500 dark:text-surface-400">
-                  <div v-if="lead.company" class="flex items-center gap-1">
-                    <i class="pi pi-building"></i>
-                    <span>{{ lead.company }}</span>
-                  </div>
-                  <div v-if="lead.email" class="flex items-center gap-1">
-                    <i class="pi pi-envelope"></i>
-                    <span class="truncate">{{ lead.email }}</span>
-                  </div>
-                  <div v-if="lead.estimated_value" class="flex items-center gap-1">
-                    <i class="pi pi-dollar"></i>
-                    <span class="font-medium text-green-600 dark:text-green-400">${{ formatCurrency(lead.estimated_value) }}</span>
-                  </div>
-                </div>
-                
-                <div class="flex justify-between items-center mt-3 pt-2 border-t border-surface-200 dark:border-surface-700">
-                  <div class="flex items-center gap-1 text-xs text-surface-400 dark:text-surface-500">
-                    <i class="pi pi-calendar"></i>
-                    <span>{{ formatDate(lead.created_at) }}</span>
-                  </div>
-                  <div class="flex gap-1">
-                    <Button 
-                      icon="pi pi-eye" 
-                      severity="secondary" 
-                      text 
-                      rounded 
-                      size="small"
-                      @click="viewLead(lead)"
-                    />
-                    <Button 
-                      icon="pi pi-pencil" 
-                      severity="info" 
-                      text 
-                      rounded 
-                      size="small"
-                      @click="editLead(lead)"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Empty state for column -->
-              <div 
-                v-if="getLeadsByStage(stage.id).length === 0" 
-                class="flex flex-col items-center justify-center py-8 text-surface-400 dark:text-surface-500"
-              >
-                <i class="pi pi-inbox text-2xl mb-2"></i>
-                <span>Sin leads</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Dialogo de Filtros Avanzados -->
     <Dialog 
