@@ -743,11 +743,6 @@ const getStatusSeverity = (status) => {
   return severities[status] || 'secondary';
 };
 
-const formatCurrency = (value) => {
-  if (!value) return '0';
-  return new Intl.NumberFormat('en-US').format(value);
-};
-
 const formatDate = (dateString) => {
   if (!dateString) return '-';
   return new Date(dateString).toLocaleDateString('es-ES', {
