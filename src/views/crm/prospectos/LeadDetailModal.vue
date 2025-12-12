@@ -881,7 +881,13 @@ const openWhatsApp = (phone) => {
   window.open(`https://wa.me/${cleanPhone}`, '_blank');
 };
 
-
+const formatCurrency = (value) => {
+  if (value === null || value === undefined) return '0';
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value);
+};
 
 const getActivityTypeLabel = (type) => {
   const labels = {

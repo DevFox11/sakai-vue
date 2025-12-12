@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { useLayout } from '@/layout/composables/layout';
 import { computed, ref } from 'vue';
 import { useToast } from 'primevue/usetoast';
+import InputSwitch from 'primevue/inputswitch';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -134,16 +135,17 @@ const handleLogout = async () => {
                                 <span>Configuración del perfil</span>
                                 <i class="pi pi-chevron-right"></i>
                             </a>
-                            <a href="#" class="user-menu-item" @click.prevent="toggleDarkMode">
+                            <div class="user-menu-item theme-toggle-container">
                                 <i class="pi pi-palette"></i>
                                 <span>Tema</span>
-                                <i class="pi pi-chevron-right"></i>
-                            </a>
-                            <a href="#" class="user-menu-item">
-                                <i class="pi pi-bars"></i>
-                                <span>Menú izquierdo</span>
-                                <i class="pi pi-chevron-right"></i>
-                            </a>
+                                <div class="theme-toggle-wrapper">
+                                    <InputSwitch
+                                        v-model="layoutState.darkTheme"
+                                        @click="toggleDarkMode"
+                                        class="theme-toggle-switch"
+                                    />
+                                </div>
+                            </div>
                             <a href="#" class="user-menu-item logout" @click.prevent="handleLogout">
                                 <i class="pi pi-sign-out"></i>
                                 <span>Cerrar sesión</span>
@@ -398,11 +400,12 @@ const handleLogout = async () => {
                 font-size: 0.875rem;
                 transition: background-color 0.2s;
                 gap: 0.75rem;
+                position: relative;
 
                 i {
                     font-size: 0.9rem;
                     color: var(--text-color-secondary);
-                    
+
                     &:last-child {
                         margin-left: auto;
                         font-size: 0.7rem;
@@ -419,9 +422,30 @@ const handleLogout = async () => {
 
                 &.logout {
                     color: #ef4444;
-                    
+
                     i {
                         color: #ef4444;
+                    }
+                }
+
+                .theme-toggle-container {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+
+                    .theme-toggle-wrapper {
+                        display: flex;
+                        align-items: center;
+                        justify-content: flex-end;
+                        flex: 1;
+
+                        .theme-toggle-switch {
+                            margin-left: auto;
+                        }
+                    }
+
+                    &:hover {
+                        background: var(--surface-hover);
                     }
                 }
             }

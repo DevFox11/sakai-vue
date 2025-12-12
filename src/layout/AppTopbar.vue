@@ -1,17 +1,11 @@
 <script setup>
-import { useLayout } from '@/layout/composables/layout';
-
-const { toggleDarkMode, isDarkTheme } = useLayout();
+// No se necesita importar el toggleDarkMode ya que se eliminó la funcionalidad
 </script>
 
 <template>
     <div class="layout-topbar">
         <div class="layout-topbar-actions">
-            <div class="layout-config-menu">
-                <button type="button" class="layout-topbar-action" @click="toggleDarkMode" title="Cambiar tema">
-                    <i :class="['pi', { 'pi-moon': isDarkTheme, 'pi-sun': !isDarkTheme }]"></i>
-                </button>
-            </div>
+            <!-- Botón de cambio de tema eliminado -->
         </div>
     </div>
 </template>
