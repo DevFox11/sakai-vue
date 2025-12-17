@@ -309,6 +309,10 @@
                     <i class="pi pi-dollar"></i>
                     <span class="font-medium text-green-600 dark:text-green-400">${{ formatCurrency(lead.estimated_value) }}</span>
                   </div>
+                  <div v-if="lead.owner_name" class="flex items-center gap-1">
+                    <i class="pi pi-user"></i>
+                    <span class="font-medium text-primary-600 dark:text-primary-400">{{ lead.owner_name }}</span>
+                  </div>
                 </div>
                 
                 <div class="flex justify-between items-center mt-3 pt-2 border-t border-surface-200 dark:border-surface-700">
