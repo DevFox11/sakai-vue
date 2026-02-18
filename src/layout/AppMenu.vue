@@ -17,12 +17,12 @@ const model = ref([
         to: '/'
     },
     {
-        label: 'Comunicaciones',
+        label: 'Conversaciones',
         icon: 'pi pi-fw pi-comments',
-        items: [
-            { label: 'Mensajes', icon: 'pi pi-fw pi-envelope', to: '/pages/empty' },
-            { label: 'Campañas', icon: 'pi pi-fw pi-send', to: '/pages/empty' }
-        ]
+        // items: [
+        //     { label: 'Mensajes', icon: 'pi pi-fw pi-envelope', to: '/pages/empty' },
+        //     { label: 'Campañas', icon: 'pi pi-fw pi-send', to: '/pages/empty' }
+        // ]
     },
     {
         label: 'CRM',

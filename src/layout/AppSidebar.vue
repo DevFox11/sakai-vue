@@ -6,6 +6,18 @@ import { useLayout } from '@/layout/composables/layout';
 import { computed, ref } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import InputSwitch from 'primevue/inputswitch';
+import { useCampaignsStore } from '@/stores/campaigns';
+
+// ==================== Campañas (desde store global) ====================
+const campaignsStore = useCampaignsStore();
+campaignsStore.initialize();
+
+const showCampaignSelector = ref(false);
+
+const selectCampaign = (campaign) => {
+    campaignsStore.selectCampaign(campaign);
+    showCampaignSelector.value = false;
+};
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -70,6 +82,52 @@ const handleLogout = async () => {
             <button class="collapse-btn" @click="toggleSidebar" :title="isCollapsed ? 'Expandir menú' : 'Colapsar menú'">
                 <i :class="isCollapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'"></i>
             </button>
+        </div>
+
+        <!-- Selector de Campaña -->
+        <div class="campaign-selector-area" :class="{ 'collapsed': isCollapsed }">
+            <div 
+                class="campaign-current" 
+                @click="showCampaignSelector = !showCampaignSelector"
+                :title="isCollapsed ? campaignsStore.selectedCampaign.name : ''"
+            >
+                <span class="campaign-emoji">{{ campaignsStore.selectedCampaign.emoji }}</span>
+                <div v-show="!isCollapsed" class="campaign-info">
+                    <span class="campaign-name">{{ campaignsStore.selectedCampaign.name }}</span>
+                    <span class="campaign-leads">{{ campaignsStore.selectedCampaign.leads }} leads</span>
+                </div>
+                <i v-show="!isCollapsed" class="pi pi-chevron-down campaign-chevron" :class="{ 'rotated': showCampaignSelector }"></i>
+            </div>
+
+            <!-- Dropdown de campañas -->
+            <Transition name="campaign-dropdown">
+                <div v-if="showCampaignSelector" class="campaign-dropdown">
+                    <div class="campaign-dropdown-header">
+                        <span class="campaign-dropdown-title">Campañas</span>
+                        <span class="campaign-dropdown-count">{{ campaignsStore.totalCampaigns }}</span>
+                    </div>
+                    <div 
+                        v-for="campaign in campaignsStore.campaigns" 
+                        :key="campaign.id" 
+                        class="campaign-option"
+                        :class="{ 'active': campaignsStore.selectedCampaign.id === campaign.id }"
+                        @click="selectCampaign(campaign)"
+                    >
+                        <span class="campaign-emoji">{{ campaign.emoji }}</span>
+                        <div class="campaign-option-info">
+                            <span class="campaign-option-name">{{ campaign.name }}</span>
+                            <span class="campaign-option-leads">{{ campaign.leads }} leads</span>
+                        </div>
+                        <span class="campaign-status-dot" :style="{ background: campaignsStore.getStatusColor(campaign.status) }"></span>
+                    </div>
+                    <div class="campaign-dropdown-footer">
+                        <button class="campaign-add-btn">
+                            <i class="pi pi-plus"></i>
+                            <span>Nueva campaña</span>
+                        </button>
+                    </div>
+                </div>
+            </Transition>
         </div>
 
         <!-- Contenido del menú -->
@@ -214,6 +272,211 @@ const handleLogout = async () => {
             color: var(--text-color);
         }
     }
+}
+
+// Selector de Campaña
+.campaign-selector-area {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--surface-border);
+    position: relative;
+
+    &.collapsed {
+        padding: 0.5rem 0.25rem;
+
+        .campaign-current {
+            justify-content: center;
+            padding: 0.5rem;
+        }
+    }
+
+    .campaign-current {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 0.6rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--surface-ground);
+        border: 1px solid var(--surface-border);
+
+        &:hover {
+            background: var(--surface-hover);
+            border-color: var(--primary-300);
+        }
+
+        .campaign-emoji {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .campaign-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+
+            .campaign-name {
+                font-weight: 600;
+                font-size: 0.8rem;
+                color: var(--text-color);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .campaign-leads {
+                font-size: 0.65rem;
+                color: var(--text-color-secondary);
+            }
+        }
+
+        .campaign-chevron {
+            font-size: 0.65rem;
+            color: var(--text-color-secondary);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+
+            &.rotated {
+                transform: rotate(180deg);
+            }
+        }
+    }
+
+    .campaign-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0.5rem;
+        right: 0.5rem;
+        background: var(--surface-card);
+        border: 1px solid var(--surface-border);
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        z-index: 1200;
+        overflow: hidden;
+
+        .campaign-dropdown-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--surface-border);
+
+            .campaign-dropdown-title {
+                font-weight: 600;
+                font-size: 0.75rem;
+                color: var(--text-color-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .campaign-dropdown-count {
+                font-size: 0.65rem;
+                background: var(--primary-100);
+                color: var(--primary-700);
+                padding: 0.1rem 0.4rem;
+                border-radius: 10px;
+                font-weight: 600;
+            }
+        }
+
+        .campaign-option {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.55rem 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.15s;
+
+            &:hover {
+                background: var(--surface-hover);
+            }
+
+            &.active {
+                background: var(--primary-50);
+
+                .campaign-option-name {
+                    color: var(--primary-700);
+                }
+            }
+
+            .campaign-emoji {
+                font-size: 1.1rem;
+                flex-shrink: 0;
+                line-height: 1;
+            }
+
+            .campaign-option-info {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+                flex: 1;
+
+                .campaign-option-name {
+                    font-weight: 500;
+                    font-size: 0.8rem;
+                    color: var(--text-color);
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .campaign-option-leads {
+                    font-size: 0.65rem;
+                    color: var(--text-color-secondary);
+                }
+            }
+
+            .campaign-status-dot {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+        }
+
+        .campaign-dropdown-footer {
+            border-top: 1px solid var(--surface-border);
+            padding: 0.4rem;
+
+            .campaign-add-btn {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                width: 100%;
+                padding: 0.5rem 0.75rem;
+                background: none;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                color: var(--primary-600);
+                font-size: 0.8rem;
+                font-weight: 500;
+                transition: background-color 0.15s;
+
+                i {
+                    font-size: 0.75rem;
+                }
+
+                &:hover {
+                    background: var(--primary-50);
+                }
+            }
+        }
+    }
+}
+
+// Animación del dropdown de campañas
+.campaign-dropdown-enter-active,
+.campaign-dropdown-leave-active {
+    transition: all 0.2s ease;
+}
+
+.campaign-dropdown-enter-from,
+.campaign-dropdown-leave-to {
+    opacity: 0;
+    transform: translateY(-6px);
 }
 
 .sidebar-content {
