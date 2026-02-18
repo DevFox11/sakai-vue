@@ -7,6 +7,24 @@ import AppTopbar from './AppTopbar.vue';
 
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
 const route = useRoute();
+import { useOrganizationsStore } from '@/stores/organizations';
+
+const organizationsStore = useOrganizationsStore();
+let timeout = null;
+
+// Sincronizar cambios de tema con el backend (con debounce)
+watch(layoutConfig, (newConfig) => {
+    if (!organizationsStore.currentOrganization) return;
+    
+    // Evitar llamadas innecesarias si es la misma config que ya tiene la org
+    const currentTheme = organizationsStore.currentOrganization.settings?.theme;
+    if (JSON.stringify(newConfig) === JSON.stringify(currentTheme)) return;
+
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+        organizationsStore.updateSettings({ theme: newConfig });
+    }, 1500); // Esperar 1.5s para agrupar cambios rápidos
+}, { deep: true });
 
 const home = ref({ icon: 'pi pi-home', to: '/' });
 const breadcrumbItems = computed(() => route.meta.breadcrumb);
@@ -27,7 +45,9 @@ const containerClass = computed(() => {
         'layout-static': layoutConfig.menuMode === 'static',
         'layout-static-inactive': layoutState.staticMenuDesktopInactive && layoutConfig.menuMode === 'static',
         'layout-overlay-active': layoutState.overlayMenuActive,
-        'layout-mobile-active': layoutState.staticMenuMobileActive
+        'layout-mobile-active': layoutState.staticMenuMobileActive,
+        'layout-theme-dark': layoutConfig.darkTheme,
+        'layout-theme-light': !layoutConfig.darkTheme
     };
 });
 

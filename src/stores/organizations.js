@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia';
 import apiClient from '@/api/axios';
 import { useAuthStore } from '@/stores/auth';
+import { useLayout } from '@/layout/composables/layout';
 
 export const useOrganizationsStore = defineStore('organizations', {
     // Estado
@@ -51,7 +52,7 @@ export const useOrganizationsStore = defineStore('organizations', {
 
             try {
                 const response = await apiClient.get('/organizations');
-                
+
                 this.userOrganizations = response.data;
 
                 // Si hay organizaciones y no hay una seleccionada actualmente, seleccionar la primera
@@ -77,6 +78,12 @@ export const useOrganizationsStore = defineStore('organizations', {
             // Guardar en localStorage para persistencia
             if (organization) {
                 localStorage.setItem('currentOrganization', JSON.stringify(organization));
+
+                // Aplicar configuración del tema si existe
+                if (organization.settings && organization.settings.theme) {
+                    const { loadThemeFromBackend } = useLayout();
+                    loadThemeFromBackend(organization.settings);
+                }
             } else {
                 localStorage.removeItem('currentOrganization');
             }
@@ -88,7 +95,7 @@ export const useOrganizationsStore = defineStore('organizations', {
          */
         async selectOrganizationById(organizationId) {
             const organization = this.userOrganizations.find(org => org.id === organizationId);
-            
+
             if (organization) {
                 this.setCurrentOrganization(organization);
                 return organization;
@@ -104,16 +111,45 @@ export const useOrganizationsStore = defineStore('organizations', {
         async createOrganization(organizationData) {
             try {
                 const response = await apiClient.post('/organizations', organizationData);
-                
+
                 // Añadir la nueva organización a la lista
                 this.userOrganizations.push(response.data);
-                
+
                 // Seleccionar automáticamente la nueva organización
                 this.setCurrentOrganization(response.data);
 
                 return response.data;
             } catch (error) {
                 this.error = this.handleError(error);
+                throw error;
+            }
+        },
+
+        /**
+         * Actualiza la configuración de la organización actual
+         * @param {Object} settings - Nuevas configuraciones
+         */
+        async updateSettings(settings) {
+            try {
+                if (!this.currentOrganization) return;
+
+                // Mezclar settings existentes con nuevos
+                const updatedSettings = {
+                    ...this.currentOrganization.settings,
+                    ...settings
+                };
+
+                const response = await apiClient.put(`/organizations/${this.currentOrganization.id}`, {
+                    settings: updatedSettings
+                });
+
+                // Actualizar estado local
+                this.currentOrganization.settings = updatedSettings;
+                localStorage.setItem('currentOrganization', JSON.stringify(this.currentOrganization));
+
+                return response.data;
+            } catch (error) {
+                console.error('Error actualizando configuración:', error);
                 throw error;
             }
         },
