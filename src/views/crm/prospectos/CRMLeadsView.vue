@@ -887,7 +887,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import { useRouter } from 'vue-router';
@@ -896,6 +896,7 @@ import crmService from '@/service/crm/crmService';
 import LeadDetailModal from './LeadDetailModal.vue';
 import apiClient from '@/api/axios';
 import { useOrganizationsStore } from '@/stores/organizations';
+import { useCampaignsStore } from '@/stores/campaigns';
 
 // ===== TOPBAR TELEPORT =====
 const isMounted = ref(false);
@@ -904,6 +905,7 @@ const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
 const organizationsStore = useOrganizationsStore();
+const campaignsStore = useCampaignsStore();
 
 // ===== VIEW MODE =====
 const viewMode = ref('kanban');
@@ -1079,6 +1081,32 @@ const getStageMenuItems = (stage) => {
     }
   ];
 };
+
+// ===== WATCH: Recargar datos cuando cambie la campaña seleccionada =====
+watch(() => campaignsStore.currentCampaignId, async (newCampaignId, oldCampaignId) => {
+  if (newCampaignId && newCampaignId !== oldCampaignId && organizationsStore.currentOrganizationId) {
+    toast.add({
+      severity: 'info',
+      summary: 'Campaña cambiada',
+      detail: `Cargando datos de: ${campaignsStore.currentCampaignName}`,
+      life: 2000
+    });
+    
+    // Recargar todos los datos para la nueva campaña
+    await loadPipelines();
+    await loadStats();
+    await loadOwners();
+    
+    try {
+      const allStagesData = await crmService.getAllStages(organizationsStore.currentOrganizationId);
+      allStages.value = allStagesData;
+    } catch (error) {
+      console.error('Error cargando etapas:', error);
+    }
+    
+    await loadLeads();
+  }
+});
 
 // ===== LIFECYCLE =====
 onMounted(async () => {
