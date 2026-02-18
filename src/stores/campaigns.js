@@ -6,19 +6,16 @@
  */
 
 import { defineStore } from 'pinia';
+import campaignService from '@/service/crm/campaignService';
+import { useOrganizationsStore } from '@/stores/organizations';
 
 export const useCampaignsStore = defineStore('campaigns', {
     // Estado
     state: () => ({
-        campaigns: [
-            { id: 1, name: 'Black Friday 2026', emoji: '🛒', status: 'active', leads: 342, budget: 15000, startDate: '2026-11-20', endDate: '2026-11-30' },
-            { id: 2, name: 'Lanzamiento Producto X', emoji: '🚀', status: 'active', leads: 128, budget: 8500, startDate: '2026-01-15', endDate: '2026-03-15' },
-            { id: 3, name: 'Email Remarketing Q1', emoji: '📧', status: 'paused', leads: 89, budget: 3200, startDate: '2026-01-01', endDate: '2026-03-31' },
-            { id: 4, name: 'Redes Sociales Verano', emoji: '☀️', status: 'draft', leads: 0, budget: 5000, startDate: '2026-06-01', endDate: '2026-08-31' },
-            { id: 5, name: 'Webinar IA para Ventas', emoji: '🤖', status: 'active', leads: 56, budget: 2000, startDate: '2026-02-01', endDate: '2026-02-28' }
-        ],
+        campaigns: [],
         currentCampaign: null,
-        loading: false
+        loading: false,
+        error: null
     }),
 
     // Getters
@@ -62,9 +59,20 @@ export const useCampaignsStore = defineStore('campaigns', {
     // Acciones
     actions: {
         /**
-         * Inicializa el store: restaura la campaña seleccionada de localStorage o selecciona la primera
+         * Inicializa el store: carga campañas del backend y restaura selección de localStorage
          */
-        initialize() {
+        async initialize() {
+            const organizationsStore = useOrganizationsStore();
+            const orgId = organizationsStore.currentOrganizationId;
+
+            if (!orgId) {
+                console.warn('Campaigns: No hay organización seleccionada');
+                return;
+            }
+
+            await this.loadCampaigns(orgId);
+
+            // Restaurar selección de localStorage
             const savedId = localStorage.getItem('currentCampaignId');
             if (savedId) {
                 const campaign = this.campaigns.find(c => c.id === parseInt(savedId));
@@ -76,6 +84,116 @@ export const useCampaignsStore = defineStore('campaigns', {
             // Si no hay guardada, seleccionar la primera
             if (this.campaigns.length > 0) {
                 this.currentCampaign = this.campaigns[0];
+            }
+        },
+
+        /**
+         * Carga las campañas desde el backend
+         * @param {string} organizationId - ID de la organización
+         * @param {string} status - Filtro opcional por estado
+         */
+        async loadCampaigns(organizationId, status = null) {
+            this.loading = true;
+            this.error = null;
+            try {
+                const data = await campaignService.getCampaigns(organizationId, status);
+                // Mapear campos del backend al formato del frontend
+                this.campaigns = data.map(c => ({
+                    id: c.id,
+                    name: c.name,
+                    emoji: c.emoji || '📢',
+                    status: c.status || 'draft',
+                    budget: parseFloat(c.budget) || 0,
+                    startDate: c.start_date,
+                    endDate: c.end_date,
+                    description: c.description,
+                    leads: 0, // Se cargará con stats
+                    organization_id: c.organization_id,
+                    created_at: c.created_at,
+                    updated_at: c.updated_at
+                }));
+            } catch (error) {
+                console.error('Error cargando campañas:', error);
+                this.error = 'No se pudieron cargar las campañas';
+                this.campaigns = [];
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        /**
+         * Crea una nueva campaña
+         * @param {Object} campaignData - Datos de la campaña
+         */
+        async createCampaign(campaignData) {
+            const organizationsStore = useOrganizationsStore();
+            const orgId = organizationsStore.currentOrganizationId;
+            if (!orgId) throw new Error('No hay organización seleccionada');
+
+            this.loading = true;
+            try {
+                const result = await campaignService.createCampaign(campaignData, orgId);
+                // Recargar lista completa
+                await this.loadCampaigns(orgId);
+                return result;
+            } catch (error) {
+                console.error('Error creando campaña:', error);
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        /**
+         * Actualiza una campaña existente
+         * @param {number} campaignId - ID de la campaña
+         * @param {Object} updateData - Datos a actualizar
+         */
+        async updateCampaign(campaignId, updateData) {
+            const organizationsStore = useOrganizationsStore();
+            const orgId = organizationsStore.currentOrganizationId;
+            if (!orgId) throw new Error('No hay organización seleccionada');
+
+            try {
+                const result = await campaignService.updateCampaign(campaignId, updateData, orgId);
+                // Recargar lista
+                await this.loadCampaigns(orgId);
+                // Si es la campaña actual, actualizarla
+                if (this.currentCampaign?.id === campaignId) {
+                    this.currentCampaign = this.campaigns.find(c => c.id === campaignId) || this.currentCampaign;
+                }
+                return result;
+            } catch (error) {
+                console.error('Error actualizando campaña:', error);
+                throw error;
+            }
+        },
+
+        /**
+         * Elimina una campaña
+         * @param {number} campaignId - ID de la campaña
+         */
+        async deleteCampaign(campaignId) {
+            const organizationsStore = useOrganizationsStore();
+            const orgId = organizationsStore.currentOrganizationId;
+            if (!orgId) throw new Error('No hay organización seleccionada');
+
+            try {
+                await campaignService.deleteCampaign(campaignId, orgId);
+                // Si eliminamos la actual, seleccionar la primera
+                if (this.currentCampaign?.id === campaignId) {
+                    this.currentCampaign = null;
+                    localStorage.removeItem('currentCampaignId');
+                }
+                // Recargar lista
+                await this.loadCampaigns(orgId);
+                // Re-seleccionar si es necesario
+                if (!this.currentCampaign && this.campaigns.length > 0) {
+                    this.selectCampaign(this.campaigns[0]);
+                }
+            } catch (error) {
+                console.error('Error eliminando campaña:', error);
+                throw error;
             }
         },
 
@@ -99,6 +217,7 @@ export const useCampaignsStore = defineStore('campaigns', {
                 case 'active': return '#22c55e';
                 case 'paused': return '#f59e0b';
                 case 'draft': return '#94a3b8';
+                case 'completed': return '#3b82f6';
                 default: return '#94a3b8';
             }
         },
@@ -113,6 +232,7 @@ export const useCampaignsStore = defineStore('campaigns', {
                 case 'active': return 'Activa';
                 case 'paused': return 'Pausada';
                 case 'draft': return 'Borrador';
+                case 'completed': return 'Completada';
                 default: return status;
             }
         }

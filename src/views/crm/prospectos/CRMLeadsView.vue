@@ -49,6 +49,8 @@
             @click="openCreateLeadDialog"
             severity="primary"
             size="small"
+            :disabled="!campaignsStore.selectedCampaign || !selectedPipeline"
+            :title="!campaignsStore.selectedCampaign ? 'Primero crea una campaña' : !selectedPipeline ? 'Primero crea un pipeline' : 'Crear nuevo lead'"
           />
           <Button
             v-if="viewMode === 'table'"
@@ -65,8 +67,9 @@
     </Teleport>
 
 
-    <!-- Estadísticas Mejoradas con Toggle -->
-    <div class="col-span-12">
+
+    <!-- Estadísticas Mejoradas con Toggle (solo cuando hay leads) -->
+    <div v-if="stats.totalLeads > 0" class="col-span-12">
       <div class="card mb-0 !p-0 overflow-hidden">
         <!-- Header con toggle colapsable -->
         <div 
@@ -89,42 +92,42 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-0">
               
               <!-- Total Leads -->
-              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
+              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0" title="Número total de leads registrados en el sistema">
                 <span class="stat-label-simple">Total Leads</span>
                 <span class="stat-value-simple">{{ stats.totalLeads }}</span>
                 <span class="stat-detail text-surface-400">en el sistema</span>
               </div>
 
               <!-- Nuevos Hoy -->
-              <div class="stat-card-simple border-b lg:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
+              <div class="stat-card-simple border-b lg:border-r border-surface-200 dark:border-surface-700 lg:border-b-0" title="Leads creados en las últimas 24 horas">
                 <span class="stat-label-simple">Nuevos Hoy</span>
                 <span class="stat-value-simple text-green-600 dark:text-green-400">+{{ stats.newToday }}</span>
                 <span class="stat-detail text-green-500">{{ stats.newToday > 0 ? Math.round((stats.newToday / Math.max(stats.totalLeads, 1)) * 100) : 0 }}% del total</span>
               </div>
 
               <!-- Contactados -->
-              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0">
+              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0" title="Leads que han sido contactados al menos una vez">
                 <span class="stat-label-simple">Contactados</span>
                 <span class="stat-value-simple text-indigo-600 dark:text-indigo-400">{{ stats.contacted }}</span>
                 <span class="stat-detail text-indigo-500">{{ stats.totalLeads > 0 ? Math.round((stats.contacted / stats.totalLeads) * 100) : 0 }}% de leads</span>
               </div>
 
               <!-- Oportunidades -->
-              <div class="stat-card-simple border-b lg:border-b-0 lg:border-r border-surface-200 dark:border-surface-700">
+              <div class="stat-card-simple border-b lg:border-b-0 lg:border-r border-surface-200 dark:border-surface-700" title="Leads calificados como oportunidades de venta activas">
                 <span class="stat-label-simple">Oportunidades</span>
                 <span class="stat-value-simple text-orange-600 dark:text-orange-400">{{ stats.opportunities }}</span>
                 <span class="stat-detail text-orange-500">activas</span>
               </div>
 
               <!-- Valor del Pipeline -->
-              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 xl:border-b-0">
+              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 xl:border-b-0" title="Suma total del valor estimado de todas las oportunidades">
                 <span class="stat-label-simple">Valor Pipeline</span>
                 <span class="stat-value-simple text-emerald-600 dark:text-emerald-400">${{ formatPipelineValue(stats.pipelineValue || 0) }}</span>
                 <span class="stat-detail text-emerald-500">valor estimado</span>
               </div>
 
               <!-- Tasa de Conversión -->
-              <div class="stat-card-simple border-b xl:border-b-0 xl:border-r border-surface-200 dark:border-surface-700">
+              <div class="stat-card-simple border-b xl:border-b-0 xl:border-r border-surface-200 dark:border-surface-700" title="Porcentaje de leads convertidos a clientes">
                 <span class="stat-label-simple">Conversión</span>
                 <span class="stat-value-simple text-purple-600 dark:text-purple-400">{{ calculateConversionRate() }}%</span>
                 <div class="w-full mt-1">
@@ -135,7 +138,7 @@
               </div>
 
               <!-- Leads Pendientes -->
-              <div class="stat-card-simple">
+              <div class="stat-card-simple" title="Leads que aún no han sido contactados y necesitan seguimiento">
                 <span class="stat-label-simple">Pendientes</span>
                 <span class="stat-value-simple" :class="(stats.pending || (stats.totalLeads - stats.contacted)) > 5 ? 'text-rose-600 dark:text-rose-400' : 'text-surface-600 dark:text-surface-300'">
                   {{ stats.pending || (stats.totalLeads - stats.contacted) }}
@@ -187,13 +190,15 @@
               </div>
               <Button
                 icon="pi pi-plus"
+                label="Nuevo Pipeline"
                 @click="openCreatePipelineDialog"
-                severity="secondary"
+                severity="success"
                 outlined
                 rounded
                 size="small"
-                title="Agregar nuevo pipeline"
-                class="!border-dashed"
+                :title="!campaignsStore.selectedCampaign ? 'Primero selecciona o crea una campaña' : 'Agregar nuevo pipeline'"
+                class="!border-dashed !border-2"
+                :disabled="!campaignsStore.selectedCampaign"
               />
               
               <!-- Menu de opciones del pipeline -->
@@ -213,16 +218,52 @@
         </div>
         
         <!-- Kanban Board Content -->
-        <div v-if="stages.length === 0" class="text-center py-12 text-surface-500">
-          <i class="pi pi-inbox text-5xl mb-4 block"></i>
-          <p class="text-lg">No hay etapas configuradas para este pipeline.</p>
-          <Button 
-            label="Crear Primera Etapa" 
-            icon="pi pi-plus" 
-            @click="openCreateStageDialog" 
-            severity="primary"
-            class="mt-4"
-          />
+        <!-- Estado vacío mejorado del Kanban -->
+        <div v-if="stages.length === 0" class="kanban-empty-state">
+          <div class="empty-illustration">
+            <svg width="120" height="100" viewBox="0 0 120 100" fill="none">
+              <rect x="5" y="20" width="30" height="70" rx="4" fill="var(--surface-200)" opacity="0.5"/>
+              <rect x="45" y="10" width="30" height="80" rx="4" fill="var(--surface-200)" opacity="0.7"/>
+              <rect x="85" y="30" width="30" height="60" rx="4" fill="var(--surface-200)" opacity="0.5"/>
+              <rect x="10" y="30" width="20" height="8" rx="2" fill="var(--primary-color)" opacity="0.4"/>
+              <rect x="10" y="42" width="20" height="8" rx="2" fill="var(--primary-color)" opacity="0.3"/>
+              <rect x="50" y="20" width="20" height="8" rx="2" fill="var(--primary-color)" opacity="0.5"/>
+              <rect x="50" y="32" width="20" height="8" rx="2" fill="var(--primary-color)" opacity="0.4"/>
+              <rect x="50" y="44" width="20" height="8" rx="2" fill="var(--primary-color)" opacity="0.3"/>
+              <rect x="90" y="40" width="20" height="8" rx="2" fill="var(--primary-color)" opacity="0.4"/>
+              <circle cx="100" cy="15" r="12" fill="#10b981" opacity="0.2"/>
+              <path d="M96 15L99 18L104 12" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <!-- Sin campaña seleccionada -->
+          <template v-if="!campaignsStore.selectedCampaign">
+            <h3 class="text-lg font-semibold text-surface-700 dark:text-surface-200 mt-4">Selecciona una campaña</h3>
+            <p class="text-surface-500 text-sm mt-1 max-w-md">Para crear pipelines y gestionar leads, primero crea o selecciona una campaña desde el <strong>menú de la izquierda</strong>.</p>
+          </template>
+          <!-- Con campaña pero sin pipeline -->
+          <template v-else-if="!selectedPipeline">
+            <h3 class="text-lg font-semibold text-surface-700 dark:text-surface-200 mt-4">Crea tu primer pipeline</h3>
+            <p class="text-surface-500 text-sm mt-1 max-w-md">Un pipeline te permite organizar el flujo de ventas. Empieza creando uno.</p>
+            <Button 
+              label="Crear Pipeline" 
+              icon="pi pi-plus" 
+              @click="openCreatePipelineDialog" 
+              severity="success"
+              class="mt-5"
+            />
+          </template>
+          <!-- Con pipeline pero sin etapas -->
+          <template v-else>
+            <h3 class="text-lg font-semibold text-surface-700 dark:text-surface-200 mt-4">Agrega etapas a tu pipeline</h3>
+            <p class="text-surface-500 text-sm mt-1 max-w-md">Crea etapas para organizar el progreso de tus leads. Por ejemplo: <strong>Nuevo → En contacto → Negociación → Cerrado</strong></p>
+            <Button 
+              label="Crear Primera Etapa" 
+              icon="pi pi-plus" 
+              @click="openCreateStageDialog" 
+              severity="success"
+              class="mt-5"
+            />
+          </template>
         </div>
         
         <!-- Kanban Board -->
@@ -939,6 +980,7 @@ const allStages = ref([]); // Lista completa de etapas para mapeo
 const dialogStages = ref([]); // Etapas filtradas para el diálogo
 const owners = ref([]);
 
+
 // ===== FILTERS =====
 const showAdvancedFilters = ref(false);
 const leadsFilters = ref({
@@ -1149,13 +1191,25 @@ const loadPipelines = async () => {
   try {
     if (!organizationsStore.currentOrganizationId) return;
 
-    const pipelinesData = await crmService.getPipelines(organizationsStore.currentOrganizationId);
+    // Si no hay campaña seleccionada, no cargar pipelines
+    const campaignId = campaignsStore.currentCampaignId;
+    if (!campaignId) {
+      pipelines.value = [];
+      selectedPipeline.value = null;
+      stages.value = [];
+      return;
+    }
+
+    const pipelinesData = await crmService.getPipelines(organizationsStore.currentOrganizationId, campaignId);
     pipelines.value = pipelinesData;
 
     if (pipelinesData.length > 0) {
       const defaultPipeline = pipelinesData.find(p => p.is_default);
       selectedPipeline.value = defaultPipeline || pipelinesData[0];
       await loadStagesByPipeline(selectedPipeline.value.id);
+    } else {
+      selectedPipeline.value = null;
+      stages.value = [];
     }
   } catch (error) {
     console.error('Error cargando pipelines:', error);
@@ -1180,7 +1234,13 @@ const loadLeads = async () => {
   try {
     if (!organizationsStore.currentOrganizationId) return;
 
-    const response = await crmService.getLeads(organizationsStore.currentOrganizationId);
+    // Pasar campaign_id como filtro si hay una campaña seleccionada
+    const params = {};
+    if (campaignsStore.currentCampaignId) {
+      params.campaign_id = campaignsStore.currentCampaignId;
+    }
+
+    const response = await crmService.getLeads(organizationsStore.currentOrganizationId, params);
     
     // Enriquecer leads con nombres de etapa y propietario
     leads.value = response.map(lead => {
@@ -1476,7 +1536,7 @@ const saveLead = async () => {
     
     if (leadDialogMode.value === 'create') {
       await crmService.createLead(leadData, organizationsStore.currentOrganizationId);
-      toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead creado', life: 3000 });
+      toast.add({ severity: 'success', summary: '🎉 ¡Lead creado!', detail: `${leadForm.value.name} se añadió exitosamente`, life: 4000 });
     } else {
       await crmService.updateLead(leadForm.value.id, leadData, organizationsStore.currentOrganizationId);
       toast.add({ severity: 'success', summary: 'Éxito', detail: 'Lead actualizado', life: 3000 });
@@ -1563,7 +1623,7 @@ const saveStage = async () => {
 
     if (stageDialogMode.value === 'create') {
       await crmService.createStage(stageData, organizationsStore.currentOrganizationId);
-      toast.add({ severity: 'success', summary: 'Éxito', detail: 'Etapa creada', life: 3000 });
+      toast.add({ severity: 'success', summary: '✅ ¡Etapa creada!', detail: `"${stageForm.value.name}" lista para recibir leads`, life: 4000 });
     } else {
       await crmService.updateStage(stageForm.value.id, stageData, organizationsStore.currentOrganizationId);
       toast.add({ severity: 'success', summary: 'Éxito', detail: 'Etapa actualizada', life: 3000 });
@@ -1637,8 +1697,13 @@ const hidePipelineDialog = () => {
 const savePipeline = async () => {
   try {
     if (pipelineDialogMode.value === 'create') {
-      await crmService.createPipeline(pipelineForm.value, organizationsStore.currentOrganizationId);
-      toast.add({ severity: 'success', summary: 'Éxito', detail: 'Pipeline creado', life: 3000 });
+      const pipelineData = { ...pipelineForm.value };
+      // Vincular pipeline a la campaña activa
+      if (campaignsStore.currentCampaignId) {
+        pipelineData.campaign_id = campaignsStore.currentCampaignId;
+      }
+      await crmService.createPipeline(pipelineData, organizationsStore.currentOrganizationId);
+      toast.add({ severity: 'success', summary: '🚀 ¡Pipeline creado!', detail: `"${pipelineForm.value.name}" está listo. ¡Agrega etapas!`, life: 4000 });
     } else {
       await crmService.updatePipeline(pipelineForm.value.id, pipelineForm.value, organizationsStore.currentOrganizationId);
       toast.add({ severity: 'success', summary: 'Éxito', detail: 'Pipeline actualizado', life: 3000 });
@@ -2250,5 +2315,77 @@ const getStatusSeverity = (status) => {
   .stat-label {
     font-size: 0.7rem;
   }
+}
+
+
+/* ===== KANBAN EMPTY STATE ===== */
+.kanban-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.empty-illustration {
+  animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== STAT CARD TOOLTIP ===== */
+.stat-card-simple {
+  position: relative;
+  cursor: default;
+}
+
+.stat-card-simple[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-900);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  animation: tooltipFade 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 250px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.stat-card-simple[title]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--surface-900);
+  z-index: 100;
+  pointer-events: none;
+  animation: tooltipFade 0.2s ease;
+}
+
+@keyframes tooltipFade {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 </style>

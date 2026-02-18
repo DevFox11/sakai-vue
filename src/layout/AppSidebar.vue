@@ -3,16 +3,73 @@ import AppMenu from './AppMenu.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import { useLayout } from '@/layout/composables/layout';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import InputSwitch from 'primevue/inputswitch';
 import { useCampaignsStore } from '@/stores/campaigns';
 
 // ==================== Campañas (desde store global) ====================
 const campaignsStore = useCampaignsStore();
-campaignsStore.initialize();
+
+onMounted(async () => {
+    await campaignsStore.initialize();
+});
 
 const showCampaignSelector = ref(false);
+const showNewCampaignDialog = ref(false);
+const savingCampaign = ref(false);
+
+const emojis = ['📢', '🛒', '🚀', '📧', '☀️', '🤖', '🎯', '💡', '🔥', '💎', '🌟', '📱', '🎁', '🏷️', '📊', '🎉'];
+
+const newCampaign = ref({
+    name: '',
+    emoji: '📢',
+    status: 'draft',
+    budget: 0,
+    start_date: null,
+    end_date: null,
+    description: ''
+});
+
+const resetNewCampaign = () => {
+    newCampaign.value = {
+        name: '',
+        emoji: '📢',
+        status: 'draft',
+        budget: 0,
+        start_date: null,
+        end_date: null,
+        description: ''
+    };
+};
+
+const openNewCampaignDialog = () => {
+    resetNewCampaign();
+    showCampaignSelector.value = false;
+    showNewCampaignDialog.value = true;
+};
+
+const saveCampaign = async () => {
+    if (!newCampaign.value.name.trim()) {
+        toast.add({ severity: 'warn', summary: 'Atención', detail: 'El nombre de la campaña es obligatorio', life: 3000 });
+        return;
+    }
+    savingCampaign.value = true;
+    try {
+        await campaignsStore.createCampaign(newCampaign.value);
+        showNewCampaignDialog.value = false;
+        // Seleccionar la última campaña creada
+        if (campaignsStore.campaigns.length > 0) {
+            campaignsStore.selectCampaign(campaignsStore.campaigns[0]);
+        }
+        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Campaña creada correctamente', life: 3000 });
+    } catch (error) {
+        console.error('Error creando campaña:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear la campaña', life: 3000 });
+    } finally {
+        savingCampaign.value = false;
+    }
+};
 
 const selectCampaign = (campaign) => {
     campaignsStore.selectCampaign(campaign);
@@ -86,48 +143,74 @@ const handleLogout = async () => {
 
         <!-- Selector de Campaña -->
         <div class="campaign-selector-area" :class="{ 'collapsed': isCollapsed }">
-            <div 
-                class="campaign-current" 
-                @click="showCampaignSelector = !showCampaignSelector"
-                :title="isCollapsed ? campaignsStore.selectedCampaign.name : ''"
-            >
-                <span class="campaign-emoji">{{ campaignsStore.selectedCampaign.emoji }}</span>
-                <div v-show="!isCollapsed" class="campaign-info">
-                    <span class="campaign-name">{{ campaignsStore.selectedCampaign.name }}</span>
-                    <span class="campaign-leads">{{ campaignsStore.selectedCampaign.leads }} leads</span>
+            <!-- Estado: Campaña seleccionada -->
+            <template v-if="campaignsStore.selectedCampaign">
+                <div 
+                    class="campaign-current" 
+                    @click="showCampaignSelector = !showCampaignSelector"
+                    :title="isCollapsed ? campaignsStore.selectedCampaign.name : ''"
+                >
+                    <span class="campaign-emoji">{{ campaignsStore.selectedCampaign.emoji }}</span>
+                    <div v-show="!isCollapsed" class="campaign-info">
+                        <span class="campaign-name">{{ campaignsStore.selectedCampaign.name }}</span>
+                        <span class="campaign-leads">{{ campaignsStore.selectedCampaign.leads }} leads</span>
+                    </div>
+                    <i v-show="!isCollapsed" class="pi pi-chevron-down campaign-chevron" :class="{ 'rotated': showCampaignSelector }"></i>
                 </div>
-                <i v-show="!isCollapsed" class="pi pi-chevron-down campaign-chevron" :class="{ 'rotated': showCampaignSelector }"></i>
-            </div>
 
-            <!-- Dropdown de campañas -->
-            <Transition name="campaign-dropdown">
-                <div v-if="showCampaignSelector" class="campaign-dropdown">
-                    <div class="campaign-dropdown-header">
-                        <span class="campaign-dropdown-title">Campañas</span>
-                        <span class="campaign-dropdown-count">{{ campaignsStore.totalCampaigns }}</span>
-                    </div>
-                    <div 
-                        v-for="campaign in campaignsStore.campaigns" 
-                        :key="campaign.id" 
-                        class="campaign-option"
-                        :class="{ 'active': campaignsStore.selectedCampaign.id === campaign.id }"
-                        @click="selectCampaign(campaign)"
-                    >
-                        <span class="campaign-emoji">{{ campaign.emoji }}</span>
-                        <div class="campaign-option-info">
-                            <span class="campaign-option-name">{{ campaign.name }}</span>
-                            <span class="campaign-option-leads">{{ campaign.leads }} leads</span>
+                <!-- Dropdown de campañas -->
+                <Transition name="campaign-dropdown">
+                    <div v-if="showCampaignSelector" class="campaign-dropdown">
+                        <div class="campaign-dropdown-header">
+                            <span class="campaign-dropdown-title">Campañas</span>
+                            <span class="campaign-dropdown-count">{{ campaignsStore.totalCampaigns }}</span>
                         </div>
-                        <span class="campaign-status-dot" :style="{ background: campaignsStore.getStatusColor(campaign.status) }"></span>
+                        <div 
+                            v-for="campaign in campaignsStore.campaigns" 
+                            :key="campaign.id" 
+                            class="campaign-option"
+                            :class="{ 'active': campaignsStore.selectedCampaign?.id === campaign.id }"
+                            @click="selectCampaign(campaign)"
+                        >
+                            <span class="campaign-emoji">{{ campaign.emoji }}</span>
+                            <div class="campaign-option-info">
+                                <span class="campaign-option-name">{{ campaign.name }}</span>
+                                <span class="campaign-option-leads">{{ campaign.leads }} leads</span>
+                            </div>
+                            <span class="campaign-status-dot" :style="{ background: campaignsStore.getStatusColor(campaign.status) }"></span>
+                        </div>
+                        <div class="campaign-dropdown-footer">
+                            <button class="campaign-add-btn" @click="openNewCampaignDialog">
+                                <i class="pi pi-plus"></i>
+                                <span>Nueva campaña</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="campaign-dropdown-footer">
-                        <button class="campaign-add-btn">
-                            <i class="pi pi-plus"></i>
-                            <span>Nueva campaña</span>
-                        </button>
+                </Transition>
+            </template>
+
+            <!-- Estado: Cargando -->
+            <template v-else-if="campaignsStore.loading">
+                <div class="campaign-current" style="opacity: 0.5; cursor: default;">
+                    <span class="campaign-emoji">⏳</span>
+                    <div v-show="!isCollapsed" class="campaign-info">
+                        <span class="campaign-name">Cargando...</span>
                     </div>
                 </div>
-            </Transition>
+            </template>
+
+            <!-- Estado: Sin campañas -->
+            <template v-else>
+                <div class="campaign-current campaign-empty" @click="openNewCampaignDialog" :title="isCollapsed ? 'Crear campaña' : ''">
+                    <div class="campaign-empty-icon">
+                        <i class="pi pi-plus"></i>
+                    </div>
+                    <div v-show="!isCollapsed" class="campaign-info">
+                        <span class="campaign-name" style="font-size: 0.8rem; color: #10b981;">Crear campaña</span>
+                        <span class="campaign-leads" style="font-size: 0.65rem;">Empieza a organizar tus leads</span>
+                    </div>
+                </div>
+            </template>
         </div>
 
         <!-- Contenido del menú -->
@@ -214,6 +297,104 @@ const handleLogout = async () => {
             </div>
         </div>
     </div>
+
+    <!-- Dialog para crear campaña -->
+    <Dialog 
+        v-model:visible="showNewCampaignDialog" 
+        header="Nueva Campaña" 
+        :modal="true" 
+        :style="{ width: '480px' }"
+        :breakpoints="{ '768px': '90vw' }"
+        class="campaign-dialog"
+    >
+        <div class="campaign-form">
+            <!-- Emoji + Nombre -->
+            <div class="form-row">
+                <div class="emoji-picker">
+                    <label class="form-label">Emoji</label>
+                    <div class="emoji-grid">
+                        <button 
+                            v-for="emoji in emojis" 
+                            :key="emoji" 
+                            class="emoji-btn" 
+                            :class="{ 'selected': newCampaign.emoji === emoji }"
+                            @click="newCampaign.emoji = emoji"
+                            type="button"
+                        >
+                            {{ emoji }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label class="form-label">Nombre *</label>
+                <input 
+                    v-model="newCampaign.name" 
+                    type="text" 
+                    class="form-input" 
+                    placeholder="Ej: Black Friday 2026"
+                    @keyup.enter="saveCampaign"
+                />
+            </div>
+
+            <div class="form-row">
+                <label class="form-label">Estado</label>
+                <select v-model="newCampaign.status" class="form-input">
+                    <option value="draft">📝 Borrador</option>
+                    <option value="active">🟢 Activa</option>
+                    <option value="paused">⏸️ Pausada</option>
+                    <option value="completed">✅ Completada</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label class="form-label">Presupuesto</label>
+                <input 
+                    v-model.number="newCampaign.budget" 
+                    type="number" 
+                    class="form-input" 
+                    placeholder="0.00" 
+                    min="0" 
+                    step="100"
+                />
+            </div>
+
+            <div class="form-row-group">
+                <div class="form-row">
+                    <label class="form-label">Fecha inicio</label>
+                    <input v-model="newCampaign.start_date" type="date" class="form-input" />
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Fecha fin</label>
+                    <input v-model="newCampaign.end_date" type="date" class="form-input" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label class="form-label">Descripción</label>
+                <textarea 
+                    v-model="newCampaign.description" 
+                    class="form-input form-textarea" 
+                    placeholder="Describe el objetivo de la campaña..." 
+                    rows="3"
+                ></textarea>
+            </div>
+        </div>
+
+        <template #footer>
+            <div class="dialog-footer">
+                <button class="btn-cancel" @click="showNewCampaignDialog = false" :disabled="savingCampaign">
+                    Cancelar
+                </button>
+                <button class="btn-save" @click="saveCampaign" :disabled="savingCampaign || !newCampaign.name.trim()">
+                    <i v-if="savingCampaign" class="pi pi-spin pi-spinner"></i>
+                    <i v-else class="pi pi-check"></i>
+                    {{ savingCampaign ? 'Guardando...' : 'Crear campaña' }}
+                </button>
+            </div>
+        </template>
+    </Dialog>
 </template>
 
 <style lang="scss" scoped>
@@ -780,4 +961,190 @@ const handleLogout = async () => {
     opacity: 0;
     transform: translateX(-10px);
 }
+// ==================== Campaign Empty State ====================
+.campaign-empty {
+    cursor: pointer;
+    border: 1px dashed rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+
+    &:hover {
+        border-color: #10b981;
+        background: rgba(16, 185, 129, 0.06);
+
+        .campaign-empty-icon {
+            transform: scale(1.1);
+            background: rgba(16, 185, 129, 0.2);
+        }
+    }
+}
+
+.campaign-empty-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(16, 185, 129, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #10b981;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    animation: pulse-green 2s ease-in-out infinite;
+}
+
+@keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
+    50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+}
+
+// ==================== Dialog de nueva campaña ====================
+// Nota: estos estilos van abajo en un bloque <style> sin scoped
+// porque PrimeVue Dialog usa teleport y scoped no alcanza
 </style>
+
+<style lang="scss">
+.campaign-dialog {
+    .campaign-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .form-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .form-row-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-color-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        border: 1px solid var(--surface-border);
+        border-radius: 8px;
+        background: var(--surface-ground);
+        color: var(--text-color);
+        font-size: 0.9rem;
+        transition: border-color 0.2s;
+        outline: none;
+        font-family: inherit;
+        box-sizing: border-box;
+
+        &:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+
+        &::placeholder {
+            color: var(--text-color-secondary);
+            opacity: 0.6;
+        }
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 70px;
+    }
+
+    .emoji-picker {
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 0.3rem;
+            margin-top: 0.25rem;
+        }
+
+        .emoji-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: var(--surface-ground);
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.15s;
+
+            &:hover {
+                background: var(--surface-hover);
+                transform: scale(1.15);
+            }
+
+            &.selected {
+                border-color: #3b82f6;
+                background: rgba(59, 130, 246, 0.1);
+                transform: scale(1.1);
+            }
+        }
+    }
+
+    .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .btn-cancel {
+        padding: 0.55rem 1.2rem;
+        border: 1px solid var(--surface-border);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-color);
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover:not(:disabled) {
+            background: var(--surface-hover);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    .btn-save {
+        padding: 0.55rem 1.2rem;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+
+        &:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+    }
+}
+</style>
+

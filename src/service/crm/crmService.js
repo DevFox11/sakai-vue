@@ -20,12 +20,15 @@ const crmService = {
         return response.data;
     },
 
-    // Obtener lista de pipelines
-    async getPipelines(organizationId) {
+    // Obtener lista de pipelines (opcionalmente filtrado por campaña)
+    async getPipelines(organizationId, campaignId = null) {
+        const params = {};
+        if (campaignId) params.campaign_id = campaignId;
         const response = await apiClient.get('/leads/pipelines/', {
             headers: {
                 'X-Organization-ID': organizationId
-            }
+            },
+            params
         });
         return response.data;
     },
@@ -96,8 +99,16 @@ const crmService = {
 
     // Obtener lista de leads
     async getLeads(organizationId, params = {}) {
+        // Filtrar params undefined/null para no enviar query params vacíos
+        const cleanParams = {};
+        for (const [key, value] of Object.entries(params)) {
+            if (value !== undefined && value !== null) {
+                cleanParams[key] = value;
+            }
+        }
+
         const response = await apiClient.get('/leads/', {
-            params,
+            params: cleanParams,
             headers: {
                 'X-Organization-ID': organizationId
             }
