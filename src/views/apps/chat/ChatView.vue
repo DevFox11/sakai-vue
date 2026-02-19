@@ -136,13 +136,6 @@ onMounted(() => {
                 <!-- <span class="topbar-chat-step">Paso: inicio <span class="topbar-step-badge">nuevo</span></span> -->
             </div>
             <div class="topbar-chat-actions">
-                <!-- <button class="topbar-action-btn">
-                    <i class="pi pi-comments"></i>
-                    <span>0</span>
-                </button>
-                <button class="topbar-action-btn">
-                    <i class="pi pi-user"></i>
-                </button> -->
                 <div class="topbar-window-status">
                     <i class="pi pi-check-circle"></i>
                     Ventana abierta (23h 59m)
@@ -169,11 +162,6 @@ onMounted(() => {
             <!-- Sidebar Header -->
             <div class="sidebar-header">
                 <h2 class="sidebar-title">Chats</h2>
-                <div class="sidebar-actions">
-                    <button class="icon-btn" title="Archivar"><i class="pi pi-inbox"></i></button>
-                    <button class="icon-btn" title="Filtrar"><i class="pi pi-filter"></i></button>
-                    <span class="chat-count">{{ totalChats }}</span>
-                </div>
             </div>
 
             <!-- Search -->
