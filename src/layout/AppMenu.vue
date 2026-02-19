@@ -19,10 +19,7 @@ const model = ref([
     {
         label: 'Conversaciones',
         icon: 'pi pi-fw pi-comments',
-        // items: [
-        //     { label: 'Mensajes', icon: 'pi pi-fw pi-envelope', to: '/pages/empty' },
-        //     { label: 'Campañas', icon: 'pi pi-fw pi-send', to: '/pages/empty' }
-        // ]
+        to: '/apps/chat'
     },
     {
         label: 'CRM',

@@ -3,25 +3,42 @@ import AppMenu from './AppMenu.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import { useLayout } from '@/layout/composables/layout';
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import InputSwitch from 'primevue/inputswitch';
 import { useCampaignsStore } from '@/stores/campaigns';
+import { useConfirm } from 'primevue/useconfirm';
+import ConfirmDialog from 'primevue/confirmdialog';
 
 // ==================== Campañas (desde store global) ====================
 const campaignsStore = useCampaignsStore();
 
 onMounted(async () => {
     await campaignsStore.initialize();
+    document.addEventListener('click', handleClickOutside);
 });
 
+onBeforeUnmount(() => {
+    document.removeEventListener('click', handleClickOutside);
+});
+
+const campaignSelectorRef = ref(null);
+
+const handleClickOutside = (event) => {
+    if (showCampaignSelector.value && campaignSelectorRef.value && !campaignSelectorRef.value.contains(event.target)) {
+        showCampaignSelector.value = false;
+    }
+};
+
 const showCampaignSelector = ref(false);
-const showNewCampaignDialog = ref(false);
+const showCampaignDialog = ref(false);
 const savingCampaign = ref(false);
+const isEditing = ref(false);
+const editingId = ref(null);
 
 const emojis = ['📢', '🛒', '🚀', '📧', '☀️', '🤖', '🎯', '💡', '🔥', '💎', '🌟', '📱', '🎁', '🏷️', '📊', '🎉'];
 
-const newCampaign = ref({
+const campaignForm = ref({
     name: '',
     emoji: '📢',
     status: 'draft',
@@ -31,8 +48,8 @@ const newCampaign = ref({
     description: ''
 });
 
-const resetNewCampaign = () => {
-    newCampaign.value = {
+const resetCampaignForm = () => {
+    campaignForm.value = {
         name: '',
         emoji: '📢',
         status: 'draft',
@@ -41,34 +58,74 @@ const resetNewCampaign = () => {
         end_date: null,
         description: ''
     };
+    isEditing.value = false;
+    editingId.value = null;
 };
 
 const openNewCampaignDialog = () => {
-    resetNewCampaign();
+    resetCampaignForm();
     showCampaignSelector.value = false;
-    showNewCampaignDialog.value = true;
+    showCampaignDialog.value = true;
+};
+
+const openEditCampaignDialog = (campaign) => {
+    campaignForm.value = { ...campaign };
+    isEditing.value = true;
+    editingId.value = campaign.id;
+    showCampaignSelector.value = false;
+    showCampaignDialog.value = true;
 };
 
 const saveCampaign = async () => {
-    if (!newCampaign.value.name.trim()) {
+    if (!campaignForm.value.name.trim()) {
         toast.add({ severity: 'warn', summary: 'Atención', detail: 'El nombre de la campaña es obligatorio', life: 3000 });
         return;
     }
     savingCampaign.value = true;
     try {
-        await campaignsStore.createCampaign(newCampaign.value);
-        showNewCampaignDialog.value = false;
-        // Seleccionar la última campaña creada
-        if (campaignsStore.campaigns.length > 0) {
-            campaignsStore.selectCampaign(campaignsStore.campaigns[0]);
+        if (isEditing.value) {
+            await campaignsStore.updateCampaign(editingId.value, campaignForm.value);
+            toast.add({ severity: 'success', summary: 'Éxito', detail: 'Campaña actualizada correctamente', life: 3000 });
+        } else {
+            await campaignsStore.createCampaign(campaignForm.value);
+            toast.add({ severity: 'success', summary: 'Éxito', detail: 'Campaña creada correctamente', life: 3000 });
+            // Seleccionar la última campaña creada solo si es nueva
+            if (campaignsStore.campaigns.length > 0) {
+                // Asumiendo que la nueva está al principio o se puede buscar, 
+                // pero por defecto selectCampaign(0) está bien si el backend ordena por fecha desc
+                campaignsStore.selectCampaign(campaignsStore.campaigns[0]);
+            }
         }
-        toast.add({ severity: 'success', summary: 'Éxito', detail: 'Campaña creada correctamente', life: 3000 });
+        showCampaignDialog.value = false;
     } catch (error) {
-        console.error('Error creando campaña:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear la campaña', life: 3000 });
+        console.error('Error guardando campaña:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la campaña', life: 3000 });
     } finally {
         savingCampaign.value = false;
     }
+};
+
+const confirm = useConfirm();
+
+const confirmDeleteCampaign = (event, campaign) => {
+    confirm.require({
+        target: event.currentTarget,
+        message: '¿Estás seguro de que quieres eliminar esta campaña?',
+        icon: 'pi pi-exclamation-triangle',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            try {
+                await campaignsStore.deleteCampaign(campaign.id);
+                toast.add({ severity: 'success', summary: 'Eliminada', detail: 'Campaña eliminada correctamente', life: 3000 });
+                confirm.close();
+            } catch (error) {
+                toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la campaña', life: 3000 });
+            }
+        },
+        reject: () => {
+            // Cancelado
+        }
+    });
 };
 
 const selectCampaign = (campaign) => {
@@ -142,7 +199,7 @@ const handleLogout = async () => {
         </div>
 
         <!-- Selector de Campaña -->
-        <div class="campaign-selector-area" :class="{ 'collapsed': isCollapsed }">
+        <div class="campaign-selector-area" :class="{ 'collapsed': isCollapsed }" ref="campaignSelectorRef">
             <!-- Estado: Campaña seleccionada -->
             <template v-if="campaignsStore.selectedCampaign">
                 <div 
@@ -178,6 +235,16 @@ const handleLogout = async () => {
                                 <span class="campaign-option-leads">{{ campaign.leads }} leads</span>
                             </div>
                             <span class="campaign-status-dot" :style="{ background: campaignsStore.getStatusColor(campaign.status) }"></span>
+                            
+                            <!-- Acciones de campaña -->
+                            <div class="campaign-actions ml-2 flex gap-1" @click.stop>
+                                <button class="action-btn edit-btn" @click="openEditCampaignDialog(campaign)" title="Editar">
+                                    <i class="pi pi-pencil"></i>
+                                </button>
+                                <button class="action-btn delete-btn" @click="confirmDeleteCampaign($event, campaign)" title="Eliminar">
+                                    <i class="pi pi-trash"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="campaign-dropdown-footer">
                             <button class="campaign-add-btn" @click="openNewCampaignDialog">
@@ -298,10 +365,10 @@ const handleLogout = async () => {
         </div>
     </div>
 
-    <!-- Dialog para crear campaña -->
+    <!-- Dialog para crear/editar campaña -->
     <Dialog 
-        v-model:visible="showNewCampaignDialog" 
-        header="Nueva Campaña" 
+        v-model:visible="showCampaignDialog" 
+        :header="isEditing ? 'Editar Campaña' : 'Nueva Campaña'" 
         :modal="true" 
         :style="{ width: '480px' }"
         :breakpoints="{ '768px': '90vw' }"
@@ -317,8 +384,8 @@ const handleLogout = async () => {
                             v-for="emoji in emojis" 
                             :key="emoji" 
                             class="emoji-btn" 
-                            :class="{ 'selected': newCampaign.emoji === emoji }"
-                            @click="newCampaign.emoji = emoji"
+                            :class="{ 'selected': campaignForm.emoji === emoji }"
+                            @click="campaignForm.emoji = emoji"
                             type="button"
                         >
                             {{ emoji }}
@@ -330,7 +397,7 @@ const handleLogout = async () => {
             <div class="form-row">
                 <label class="form-label">Nombre *</label>
                 <input 
-                    v-model="newCampaign.name" 
+                    v-model="campaignForm.name" 
                     type="text" 
                     class="form-input" 
                     placeholder="Ej: Black Friday 2026"
@@ -340,7 +407,7 @@ const handleLogout = async () => {
 
             <div class="form-row">
                 <label class="form-label">Estado</label>
-                <select v-model="newCampaign.status" class="form-input">
+                <select v-model="campaignForm.status" class="form-input">
                     <option value="draft">📝 Borrador</option>
                     <option value="active">🟢 Activa</option>
                     <option value="paused">⏸️ Pausada</option>
@@ -351,7 +418,7 @@ const handleLogout = async () => {
             <div class="form-row">
                 <label class="form-label">Presupuesto</label>
                 <input 
-                    v-model.number="newCampaign.budget" 
+                    v-model.number="campaignForm.budget" 
                     type="number" 
                     class="form-input" 
                     placeholder="0.00" 
@@ -363,18 +430,18 @@ const handleLogout = async () => {
             <div class="form-row-group">
                 <div class="form-row">
                     <label class="form-label">Fecha inicio</label>
-                    <input v-model="newCampaign.start_date" type="date" class="form-input" />
+                    <input v-model="campaignForm.start_date" type="date" class="form-input" />
                 </div>
                 <div class="form-row">
                     <label class="form-label">Fecha fin</label>
-                    <input v-model="newCampaign.end_date" type="date" class="form-input" />
+                    <input v-model="campaignForm.end_date" type="date" class="form-input" />
                 </div>
             </div>
 
             <div class="form-row">
                 <label class="form-label">Descripción</label>
                 <textarea 
-                    v-model="newCampaign.description" 
+                    v-model="campaignForm.description" 
                     class="form-input form-textarea" 
                     placeholder="Describe el objetivo de la campaña..." 
                     rows="3"
@@ -384,17 +451,19 @@ const handleLogout = async () => {
 
         <template #footer>
             <div class="dialog-footer">
-                <button class="btn-cancel" @click="showNewCampaignDialog = false" :disabled="savingCampaign">
+                <button class="btn-cancel" @click="showCampaignDialog = false" :disabled="savingCampaign">
                     Cancelar
                 </button>
-                <button class="btn-save" @click="saveCampaign" :disabled="savingCampaign || !newCampaign.name.trim()">
+                <button class="btn-save" @click="saveCampaign" :disabled="savingCampaign || !campaignForm.name.trim()">
                     <i v-if="savingCampaign" class="pi pi-spin pi-spinner"></i>
                     <i v-else class="pi pi-check"></i>
-                    {{ savingCampaign ? 'Guardando...' : 'Crear campaña' }}
+                    {{ savingCampaign ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear campaña') }}
                 </button>
             </div>
         </template>
     </Dialog>
+    
+    <ConfirmDialog></ConfirmDialog>
 </template>
 
 <style lang="scss" scoped>
@@ -614,6 +683,38 @@ const handleLogout = async () => {
                 height: 7px;
                 border-radius: 50%;
                 flex-shrink: 0;
+            }
+
+            .campaign-actions {
+                opacity: 0;
+                transition: opacity 0.2s;
+                
+                .action-btn {
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 0.2rem;
+                    border-radius: 4px;
+                    color: var(--text-color-secondary);
+                    
+                    &:hover {
+                        background: var(--surface-200);
+                        color: var(--text-color);
+                    }
+
+                    &.delete-btn:hover {
+                        color: #ef4444;
+                        background: #fee2e2;
+                    }
+                    
+                    i {
+                        font-size: 0.8rem;
+                    }
+                }
+            }
+
+            &:hover .campaign-actions {
+                opacity: 1;
             }
         }
 

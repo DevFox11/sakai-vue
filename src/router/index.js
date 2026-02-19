@@ -15,7 +15,7 @@ const router = createRouter({
                     path: '/',
                     name: 'dashboard',
                     meta: {
-                        breadcrumb: [{ label: 'Inicio' }, { label: 'Dashboard' }]
+                        // breadcrumb removed
                     },
                     component: () => import('@/views/Dashboard.vue')
                 },
@@ -212,6 +212,14 @@ const router = createRouter({
                     component: () => import('@/views/pages/Documentation.vue')
                 }
             ]
+        },
+        {
+            path: '/apps/chat',
+            name: 'chat',
+            meta: {
+                breadcrumb: [{ label: 'Aplicaciones' }, { label: 'Chat' }]
+            },
+            component: () => import('@/views/apps/chat/ChatView.vue')
         },
         {
             path: '/landing',
