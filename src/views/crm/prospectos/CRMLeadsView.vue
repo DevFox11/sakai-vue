@@ -15,7 +15,7 @@
     </div>
   </div>
 
-  <div v-else class="grid grid-cols-12 gap-6">
+  <div v-else style="display: flex; flex-direction: column; height: calc(100vh - 7rem); overflow: hidden; gap: 0.75rem;">
     <!-- Teleport de controles al Topbar (solo cuando el componente está montado) -->
     <Teleport v-if="isMounted" to="#topbar-content">
       <div class="flex items-center gap-4 w-full">
@@ -69,7 +69,7 @@
 
 
     <!-- Estadísticas Mejoradas con Toggle (solo cuando hay leads) -->
-    <div v-if="stats.totalLeads > 0" class="col-span-12">
+    <div v-if="stats.totalLeads > 0">
       <div class="card mb-0 !p-0 overflow-hidden">
         <!-- Header con toggle colapsable -->
         <div 
@@ -155,8 +155,8 @@
     </div>
 
     <!-- Pipeline Selector + Kanban unificados -->
-    <div v-if="viewMode === 'kanban'" class="col-span-12">
-      <div class="card p-0 overflow-hidden">
+    <div v-if="viewMode === 'kanban'" style="min-height: 0; overflow: hidden; flex: 1;">
+      <div class="card p-0 overflow-hidden" style="height: 100%; display: flex; flex-direction: column;">
         <!-- Pipeline Selector Header -->
         <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-surface-200 dark:border-surface-700">
           <div class="flex flex-wrap items-center gap-3">
@@ -267,7 +267,7 @@
         </div>
         
         <!-- Kanban Board -->
-        <div v-else class="flex gap-4 overflow-x-auto p-4" style="height: calc(100vh - 20rem);">
+        <div v-else class="flex gap-4 overflow-x-auto p-4" style="flex: 1; overflow-y: hidden;">
           <div 
             v-for="stage in stages" 
             :key="stage.id" 
@@ -288,7 +288,7 @@
             >
               <div class="flex flex-col gap-1 min-w-0 flex-1">
                 <div class="flex items-center gap-2">
-                  <h3 class="font-semibold text-xs text-surface-800 dark:text-surface-100 truncate" :title="stage.name">{{ stage.name }}</h3>
+                  <h3 style="font-size: 1.5rem;" class="font-semibold text-surface-800 dark:text-surface-100 truncate" :title="stage.name">{{ stage.name }}</h3>
                   <span 
                     class="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
                     :style="{ 
@@ -322,52 +322,53 @@
             </div>
             
             <!-- Column Content -->
-            <div class="flex-1 p-3 overflow-y-auto flex flex-col gap-3">
+            <div class="flex-1 p-2 overflow-y-auto flex flex-col gap-2">
               <div 
                 v-for="lead in getLeadsByStage(stage.id)" 
                 :key="lead.id"
-                class="bg-surface-0 dark:bg-surface-900 rounded-lg p-3 cursor-grab border border-surface-200 dark:border-surface-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                class="bg-surface-0 dark:bg-surface-900 rounded-lg px-2.5 py-2 cursor-grab border border-surface-200 dark:border-surface-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                 :class="{ 'opacity-50 rotate-1': draggedLead && draggedLead.id === lead.id }"
                 draggable="true"
                 @dragstart="onDragStart($event, lead)"
                 @dragend="onDragEnd"
               >
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="font-medium text-surface-900 dark:text-surface-0 text-xs">{{ lead.name }}</h4>
-                  <Tag :value="lead.status" :severity="getStatusSeverity(lead.status)" class="text-xs" />
+                <div class="flex justify-between items-center mb-1">
+                  <h4 class="font-medium text-surface-900 dark:text-surface-0 truncate" style="font-size: 1.0rem;">{{ lead.name }}</h4>
+                  <Tag :value="lead.status" :severity="getStatusSeverity(lead.status)" class="text-xs !py-0 !px-1.5" />
                 </div>
                 
-                <div class="space-y-1 text-xs text-surface-500 dark:text-surface-400">
+                <div class="space-y-0.5 text-xs text-surface-500 dark:text-surface-400">
                   <div v-if="lead.company" class="flex items-center gap-1">
-                    <i class="pi pi-building"></i>
-                    <span>{{ lead.company }}</span>
+                    <i class="pi pi-building" style="font-size: 0.65rem;"></i>
+                    <span class="truncate">{{ lead.company }}</span>
                   </div>
                   <div v-if="lead.email" class="flex items-center gap-1">
-                    <i class="pi pi-envelope"></i>
+                    <i class="pi pi-envelope" style="font-size: 0.65rem;"></i>
                     <span class="truncate">{{ lead.email }}</span>
                   </div>
                   <div v-if="lead.estimated_value" class="flex items-center gap-1">
-                    <i class="pi pi-dollar"></i>
+                    <i class="pi pi-dollar" style="font-size: 0.65rem;"></i>
                     <span class="font-medium text-green-600 dark:text-green-400">${{ formatCurrency(lead.estimated_value) }}</span>
                   </div>
                   <div v-if="lead.owner_name" class="flex items-center gap-1">
-                    <i class="pi pi-user"></i>
+                    <i class="pi pi-user" style="font-size: 0.65rem;"></i>
                     <span class="font-medium text-primary-600 dark:text-primary-400">{{ lead.owner_name }}</span>
                   </div>
                 </div>
                 
-                <div class="flex justify-between items-center mt-3 pt-2 border-t border-surface-200 dark:border-surface-700">
-                  <div class="flex items-center gap-1 text-xs text-surface-400 dark:text-surface-500">
-                    <i class="pi pi-calendar"></i>
+                <div class="flex justify-between items-center mt-1.5 pt-1 border-t border-surface-200 dark:border-surface-700">
+                  <div class="flex items-center gap-1 text-xs text-surface-400 dark:text-surface-500" style="font-size: 0.65rem;">
+                    <i class="pi pi-calendar" style="font-size: 0.6rem;"></i>
                     <span>{{ formatDate(lead.created_at) }}</span>
                   </div>
-                  <div class="flex gap-1">
+                  <div class="flex gap-0.5">
                     <Button 
                       icon="pi pi-eye" 
                       severity="secondary" 
                       text 
                       rounded 
                       size="small"
+                      class="!w-6 !h-6"
                       @click="viewLead(lead)"
                     />
                     <Button 
@@ -376,6 +377,7 @@
                       text 
                       rounded 
                       size="small"
+                      class="!w-6 !h-6"
                       @click="editLead(lead)"
                     />
                   </div>
@@ -385,10 +387,10 @@
               <!-- Empty state for column -->
               <div 
                 v-if="getLeadsByStage(stage.id).length === 0" 
-                class="flex flex-col items-center justify-center py-8 text-surface-400 dark:text-surface-500"
+                class="flex flex-col items-center justify-center py-6 text-surface-400 dark:text-surface-500"
               >
-                <i class="pi pi-inbox text-2xl mb-2"></i>
-                <span>Sin leads</span>
+                <i class="pi pi-inbox text-xl mb-1"></i>
+                <span class="text-xs">Sin leads</span>
               </div>
             </div>
           </div>
