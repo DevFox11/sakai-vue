@@ -15,7 +15,7 @@ const router = createRouter({
                     path: '/',
                     name: 'dashboard',
                     meta: {
-                        // breadcrumb removed
+                        breadcrumb: [{ label: 'Inicio' }, { label: 'Dashboard' }]
                     },
                     component: () => import('@/views/Dashboard.vue')
                 },
@@ -44,6 +44,11 @@ const router = createRouter({
                         breadcrumb: [{ label: 'Gestión' }, { label: 'Estadísticas' }]
                     },
                     component: () => import('@/views/pages/EstadisticasReportes.vue')
+                },
+                {
+                    path: '/apps/chat',
+                    name: 'chat',
+                    component: () => import('@/views/apps/chat/ChatView.vue')
                 },
                 {
                     path: '/uikit/formlayout',
@@ -212,14 +217,6 @@ const router = createRouter({
                     component: () => import('@/views/pages/Documentation.vue')
                 }
             ]
-        },
-        {
-            path: '/apps/chat',
-            name: 'chat',
-            meta: {
-                breadcrumb: [{ label: 'Aplicaciones' }, { label: 'Chat' }]
-            },
-            component: () => import('@/views/apps/chat/ChatView.vue')
         },
         {
             path: '/landing',
