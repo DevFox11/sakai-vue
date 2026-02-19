@@ -3,12 +3,12 @@ import { ref, computed, nextTick, onMounted, watch } from 'vue';
 
 /* ── Datos demo ── */
 const contacts = ref([
-    { id: 1, name: 'Erik Taveras', initials: 'ET', color: '#4caf50', lastMsg: 'Perfecto, con gusto. Primero, ¿puedes deci...', time: 'ahora', isIA: true, channel: 'whatsapp', unread: 0, active: true },
-    { id: 2, name: 'Carlos', initials: 'CA', color: '#ff9800', lastMsg: 'Tu: Hola Carlos, te habla Erik, me gustaría sab...', time: '00:24', isIA: false, channel: 'whatsapp', unread: 1, active: false },
-    { id: 3, name: 'Jairo', initials: 'JA', color: '#9c27b0', lastMsg: 'Tu: Hola Jairo, gracias por tu interés en TalosFl...', time: 'ayer', isIA: true, channel: 'whatsapp', unread: 0, active: false },
-    { id: 4, name: 'Yukata Yokoyama Antonio Durán', initials: 'YU', color: '#ffc107', lastMsg: 'Tu: ¡Genial! Me alegra saber que te agrada la i...', time: 'ayer', isIA: true, channel: 'whatsapp', unread: 0, active: false },
-    { id: 5, name: 'Brian Jose Lopez Silva', initials: 'BR', color: '#2196f3', lastMsg: 'Tu: Con gusto. Primero, ¿me puedes contar un p...', time: 'ayer', isIA: true, channel: 'whatsapp', unread: 0, active: false },
-    { id: 6, name: 'Raysa Taveras', initials: 'RA', color: '#e91e63', lastMsg: 'Tu: ¡Hola! ¿Cómo estás? Si necesitas informaci...', time: 'ayer', isIA: true, channel: 'whatsapp', unread: 0, active: false }
+    { id: 1, name: 'Erik Taveras', initials: 'ET', color: '#4caf50', lastMsg: 'Perfecto, con gusto. Primero, ¿puedes deci...', time: 'ahora', isIA: true, channel: 'whatsapp', unread: 0, active: true, online: true },
+    { id: 2, name: 'Carlos', initials: 'CA', color: '#ff9800', lastMsg: 'Tu: Hola Carlos, te habla Erik, me gustaría sab...', time: '00:24', isIA: false, channel: 'whatsapp', unread: 1, active: false, online: true },
+    { id: 3, name: 'Jairo', initials: 'JA', color: '#9c27b0', lastMsg: 'Tu: Hola Jairo, gracias por tu interés en TalosFl...', time: 'ayer', isIA: true, channel: 'whatsapp', unread: 0, active: false, online: false },
+    { id: 4, name: 'Yukata Yokoyama Antonio Durán', initials: 'YU', color: '#ffc107', lastMsg: 'Tu: ¡Genial! Me alegra saber que te agrada la i...', time: 'ayer', isIA: true, channel: 'whatsapp', unread: 0, active: false, online: false },
+    { id: 5, name: 'Brian Jose Lopez Silva', initials: 'BR', color: '#2196f3', lastMsg: 'Tu: Con gusto. Primero, ¿me puedes contar un p...', time: 'ayer', isIA: true, channel: 'whatsapp', unread: 0, active: false, online: true },
+    { id: 6, name: 'Raysa Taveras', initials: 'RA', color: '#e91e63', lastMsg: 'Tu: ¡Hola! ¿Cómo estás? Si necesitas informaci...', time: 'ayer', isIA: true, channel: 'whatsapp', unread: 0, active: false, online: false }
 ]);
 
 const messages = ref([
@@ -21,9 +21,18 @@ const messages = ref([
 const searchQuery = ref('');
 const newMessage = ref('');
 const botEnabled = ref(true);
+const chatMode = ref('bot');
+const chatModeOptions = ref([
+    { label: 'Humano', value: 'human', icon: 'pi pi-user' },
+    { label: 'Agente IA', value: 'bot', icon: 'pi pi-bolt' }
+]);
 const selectedContact = ref(contacts.value[0]);
 const chatBody = ref(null);
 const sidebarVisible = ref(true);
+const isMounted = ref(false);
+const attachMenuOpen = ref(false);
+const fileInputRef = ref(null);
+const imageInputRef = ref(null);
 
 /* ── Computed ── */
 const filteredContacts = computed(() => {
@@ -82,35 +91,74 @@ function toggleSidebar() {
     sidebarVisible.value = !sidebarVisible.value;
 }
 
-onMounted(scrollToBottom);
+function toggleAttachMenu() {
+    attachMenuOpen.value = !attachMenuOpen.value;
+}
+
+function attachImage() {
+    attachMenuOpen.value = false;
+    imageInputRef.value?.click();
+}
+
+function attachDocument() {
+    attachMenuOpen.value = false;
+    fileInputRef.value?.click();
+}
+
+function handleFileSelected(event) {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+        // TODO: procesar archivos adjuntos
+        console.log('Archivos seleccionados:', files);
+    }
+    event.target.value = '';
+}
+
+onMounted(() => {
+    isMounted.value = true;
+    scrollToBottom();
+});
 </script>
 
 <template>
     <!-- ═══ TOPBAR CONTENT (via Teleport) ═══ -->
-    <Teleport to="#topbar-content">
+    <Teleport v-if="isMounted" to="#topbar-content">
         <div class="topbar-chat-header">
             <button class="topbar-icon-btn mobile-menu-btn" @click="toggleSidebar">
                 <i class="pi pi-bars"></i>
             </button>
             <div class="topbar-chat-avatar" :style="{ background: selectedContact.color }">
                 {{ selectedContact.initials }}
+                <span class="status-dot" :class="selectedContact.online ? 'online' : 'offline'"></span>
             </div>
             <div class="topbar-chat-info">
                 <span class="topbar-chat-name">{{ selectedContact.name }}</span>
-                <span class="topbar-chat-step">Paso: inicio <span class="topbar-step-badge">nuevo</span></span>
+                <!-- <span class="topbar-chat-step">Paso: inicio <span class="topbar-step-badge">nuevo</span></span> -->
             </div>
             <div class="topbar-chat-actions">
-                <button class="topbar-action-btn">
+                <!-- <button class="topbar-action-btn">
                     <i class="pi pi-comments"></i>
                     <span>0</span>
                 </button>
                 <button class="topbar-action-btn">
                     <i class="pi pi-user"></i>
-                </button>
-                <button class="topbar-action-btn topbar-intervene-btn">Intervenir</button>
-                <button class="topbar-action-btn topbar-bot-toggle" :class="{ 'bot-on': botEnabled, 'bot-off': !botEnabled }" @click="botEnabled = !botEnabled">
-                    Bot IA {{ botEnabled ? 'ON' : 'OFF' }}
-                </button>
+                </button> -->
+                <div class="topbar-window-status">
+                    <i class="pi pi-check-circle"></i>
+                    Ventana abierta (23h 59m)
+                </div>
+                <SelectButton
+                    v-model="chatMode"
+                    :options="chatModeOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    :allowEmpty="false"
+                >
+                    <template #option="slotProps">
+                        <i :class="slotProps.option.icon" class="mr-2"></i>
+                        <span>{{ slotProps.option.label }}</span>
+                    </template>
+                </SelectButton>
             </div>
         </div>
     </Teleport>
@@ -139,6 +187,7 @@ onMounted(scrollToBottom);
                 <li v-for="contact in filteredContacts" :key="contact.id" class="contact-item" :class="{ active: contact.active }" @click="selectContact(contact)">
                     <div class="contact-avatar" :style="{ background: contact.color }">
                         {{ contact.initials }}
+                        <span class="status-dot" :class="contact.online ? 'online' : 'offline'"></span>
                     </div>
                     <div class="contact-info">
                         <div class="contact-top">
@@ -183,13 +232,27 @@ onMounted(scrollToBottom);
 
             <!-- Chat Footer -->
             <div class="chat-footer">
-                <div class="window-status">
-                    <i class="pi pi-check-circle"></i>
-                    Ventana abierta (23h 59m)
-                </div>
                 <div class="message-input-bar">
-                    <button class="icon-btn spark-btn"><i class="pi pi-bolt"></i></button>
-                    <input v-model="newMessage" type="text" placeholder="Escribe un mensaje..." @keyup.enter="sendMessage" />
+                    <div class="attach-wrapper">
+                        <button class="icon-btn spark-btn" @click="toggleAttachMenu">
+                            <i class="pi pi-paperclip"></i>
+                        </button>
+                        <Transition name="attach-pop">
+                            <div v-if="attachMenuOpen" class="attach-menu">
+                                <button class="attach-option" @click="attachImage">
+                                    <i class="pi pi-image"></i>
+                                    <span>Imagen</span>
+                                </button>
+                                <button class="attach-option" @click="attachDocument">
+                                    <i class="pi pi-file"></i>
+                                    <span>Documento</span>
+                                </button>
+                            </div>
+                        </Transition>
+                        <input ref="imageInputRef" type="file" accept="image/*" hidden @change="handleFileSelected" />
+                        <input ref="fileInputRef" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" hidden @change="handleFileSelected" />
+                    </div>
+                    <input v-model="newMessage" type="text" placeholder="Escribe un mensaje..." @keyup.enter="sendMessage" @focus="attachMenuOpen = false" />
                     <button class="send-btn" @click="sendMessage">
                         <i class="pi pi-send"></i>
                     </button>
@@ -349,6 +412,7 @@ onMounted(scrollToBottom);
     font-weight: 700;
     font-size: 0.85rem;
     color: white;
+    position: relative;
 }
 
 .contact-info {
@@ -577,6 +641,65 @@ onMounted(scrollToBottom);
     color: var(--text-color-secondary);
 }
 
+/* Attachment menu */
+.attach-wrapper {
+    position: relative;
+}
+
+.attach-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    padding: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    z-index: 10;
+    min-width: 150px;
+}
+
+.attach-option {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.85rem;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.85rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+.attach-option:hover {
+    background: var(--surface-hover);
+}
+.attach-option i {
+    font-size: 1rem;
+    color: var(--primary-color);
+}
+
+/* Attach menu transition */
+.attach-pop-enter-active {
+    transition: all 0.2s ease-out;
+}
+.attach-pop-leave-active {
+    transition: all 0.15s ease-in;
+}
+.attach-pop-enter-from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+}
+.attach-pop-leave-to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+}
+
 .message-input-bar input {
     flex: 1;
     border: none;
@@ -688,6 +811,7 @@ onMounted(scrollToBottom);
     font-weight: 700;
     font-size: 0.8rem;
     color: white;
+    position: relative;
 }
 
 .topbar-chat-info {
@@ -751,32 +875,53 @@ onMounted(scrollToBottom);
     font-weight: 600;
 }
 
-.topbar-bot-toggle {
-    font-weight: 700;
-    font-size: 0.76rem;
-    padding: 0.35rem 0.8rem;
-}
-.topbar-bot-toggle.bot-on {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
-.topbar-bot-toggle.bot-on:hover {
-    background: var(--primary-600, #388e3c);
-    border-color: var(--primary-600, #388e3c);
-}
-.topbar-bot-toggle.bot-off {
-    background: var(--surface-200, #e0e0e0);
-    color: var(--text-color-secondary);
-    border-color: var(--surface-300, #ccc);
-}
-
 @media (max-width: 768px) {
     .topbar-icon-btn.mobile-menu-btn {
         display: flex;
     }
-    .topbar-chat-actions .topbar-action-btn:not(.topbar-bot-toggle) {
+    .topbar-chat-actions .topbar-action-btn {
         display: none;
     }
+}
+
+/* Topbar window status */
+.topbar-window-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0.3rem 0.75rem;
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    color: #2e7d32;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.topbar-window-status i {
+    font-size: 0.8rem;
+}
+:root[class*='dark'] .topbar-window-status,
+.p-dark .topbar-window-status,
+.app-dark .topbar-window-status {
+    background: linear-gradient(135deg, #1b5e20, #2e7d32);
+    color: #a5d6a7;
+}
+
+/* Status dot (online/offline) */
+.status-dot {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 2px solid var(--surface-card, #fff);
+    transition: background 0.2s;
+}
+.status-dot.online {
+    background: #4caf50;
+}
+.status-dot.offline {
+    background: #9e9e9e;
 }
 </style>
