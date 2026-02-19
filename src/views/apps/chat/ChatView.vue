@@ -562,10 +562,20 @@ onMounted(() => {
     border-top-right-radius: 4px;
 }
 
-:root[class*='dark'] .bubble-ia,
-.p-dark .bubble-ia {
-    background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+/* Force dark text inside IA bubbles (light green bg needs dark text in all modes) */
+.bubble-ia .message-text {
+    color: #1b1b1b;
 }
+.bubble-ia .ia-badge {
+    color: #2e7d32;
+}
+.bubble-ia .message-time {
+    color: #4a6a4a;
+}
+.bubble-ia .message-time i {
+    color: #4a6a4a;
+}
+
 
 .ia-badge {
     display: inline-flex;
@@ -621,11 +631,7 @@ onMounted(() => {
     font-size: 0.85rem;
 }
 
-:root[class*='dark'] .window-status,
-.p-dark .window-status {
-    background: linear-gradient(135deg, #1b5e20, #2e7d32);
-    color: #a5d6a7;
-}
+
 
 .message-input-bar {
     display: flex;
@@ -900,12 +906,7 @@ onMounted(() => {
 .topbar-window-status i {
     font-size: 0.8rem;
 }
-:root[class*='dark'] .topbar-window-status,
-.p-dark .topbar-window-status,
-.app-dark .topbar-window-status {
-    background: linear-gradient(135deg, #1b5e20, #2e7d32);
-    color: #a5d6a7;
-}
+
 
 /* Status dot (online/offline) */
 .status-dot {
