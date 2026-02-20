@@ -27,9 +27,19 @@
         
         <div class="flex-1"></div>
         
-        <!-- Controles -->
+        <!-- Controles compactados y barra de búsqueda -->
         <div class="flex flex-wrap gap-2 items-center">
-          <!-- Toggle Vista -->
+          <!-- Búsqueda Global -->
+          <IconField class="w-full sm:w-auto hidden md:block">
+            <InputIcon class="pi pi-search" />
+            <InputText 
+              v-model="leadsFilters['global'].value" 
+              placeholder="Buscar prospectos..." 
+              class="w-full sm:w-64 !rounded-full"
+            />
+          </IconField>
+          
+          <!-- Toggle Vista Compacto -->
           <SelectButton
             v-model="viewMode"
             :options="viewModeOptions"
@@ -37,30 +47,35 @@
             optionValue="value"
             :allowEmpty="false"
           >
+            <!-- Mostrar icono y no label para ahorrar espacio -->
             <template #option="slotProps">
-              <i :class="slotProps.option.icon" class="mr-2"></i>
-              <span>{{ slotProps.option.label }}</span>
+              <i :class="slotProps.option.icon" :title="slotProps.option.label"></i>
             </template>
           </SelectButton>
           
+          <!-- Filtros Avanzados (siempre visible como icono) -->
           <Button
-            label="Nuevo Lead"
-            icon="pi pi-plus"
-            @click="openCreateLeadDialog"
-            severity="primary"
-            size="small"
-            :disabled="!campaignsStore.selectedCampaign || !selectedPipeline"
-            :title="!campaignsStore.selectedCampaign ? 'Primero crea una campaña' : !selectedPipeline ? 'Primero crea un pipeline' : 'Crear nuevo lead'"
-          />
-          <Button
-            v-if="viewMode === 'table'"
-            label="Filtros Avanzados"
             icon="pi pi-filter"
             @click="toggleAdvancedFilters"
             severity="secondary"
             outlined
+            rounded
             size="small"
+            title="Filtros Avanzados"
             :class="{ 'bg-primary-50 border-primary-200 text-primary-700': showAdvancedFilters }"
+          />
+
+          <!-- Botón de acción principal contenido -->
+          <Button
+            label="Nuevo Lead"
+            icon="pi pi-plus"
+            @click="openCreateLeadDialog"
+            severity="secondary"
+            outlined
+            class="!rounded-full shadow-sm !font-medium"
+            size="small"
+            :disabled="!campaignsStore.selectedCampaign || !selectedPipeline"
+            :title="!campaignsStore.selectedCampaign ? 'Primero crea una campaña' : !selectedPipeline ? 'Primero crea un pipeline' : 'Crear nuevo lead'"
           />
         </div>
       </div>
@@ -88,66 +103,79 @@
         
         <!-- Contenido colapsable -->
         <Transition name="stats-collapse">
-          <div v-show="showStats" class="border-t border-surface-200 dark:border-surface-700">
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-0">
+          <div v-show="showStats" class="border-t border-surface-200 dark:border-surface-700 bg-surface-50/30 dark:bg-surface-800/20">
+            <div class="flex flex-wrap items-center justify-between p-4 gap-4 overflow-x-auto">
               
               <!-- Total Leads -->
-              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0" title="Número total de leads registrados en el sistema">
-                <span class="stat-label-simple">Total Leads</span>
-                <span class="stat-value-simple">{{ stats.totalLeads }}</span>
-                <span class="stat-detail text-surface-400">en el sistema</span>
+              <div class="flex flex-col min-w-[100px]" title="Número total de leads registrados en el sistema">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-0.5">Total Leads</span>
+                <span class="text-xl font-bold text-surface-900 dark:text-surface-0">{{ stats.totalLeads }}</span>
               </div>
+
+              <div class="w-px h-8 bg-surface-200 dark:bg-surface-700 hidden sm:block"></div>
 
               <!-- Nuevos Hoy -->
-              <div class="stat-card-simple border-b lg:border-r border-surface-200 dark:border-surface-700 lg:border-b-0" title="Leads creados en las últimas 24 horas">
-                <span class="stat-label-simple">Nuevos Hoy</span>
-                <span class="stat-value-simple text-green-600 dark:text-green-400">+{{ stats.newToday }}</span>
-                <span class="stat-detail text-green-500">{{ stats.newToday > 0 ? Math.round((stats.newToday / Math.max(stats.totalLeads, 1)) * 100) : 0 }}% del total</span>
-              </div>
-
-              <!-- Contactados -->
-              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 lg:border-b-0" title="Leads que han sido contactados al menos una vez">
-                <span class="stat-label-simple">Contactados</span>
-                <span class="stat-value-simple text-indigo-600 dark:text-indigo-400">{{ stats.contacted }}</span>
-                <span class="stat-detail text-indigo-500">{{ stats.totalLeads > 0 ? Math.round((stats.contacted / stats.totalLeads) * 100) : 0 }}% de leads</span>
-              </div>
-
-              <!-- Oportunidades -->
-              <div class="stat-card-simple border-b lg:border-b-0 lg:border-r border-surface-200 dark:border-surface-700" title="Leads calificados como oportunidades de venta activas">
-                <span class="stat-label-simple">Oportunidades</span>
-                <span class="stat-value-simple text-orange-600 dark:text-orange-400">{{ stats.opportunities }}</span>
-                <span class="stat-detail text-orange-500">activas</span>
-              </div>
-
-              <!-- Valor del Pipeline -->
-              <div class="stat-card-simple border-b sm:border-r border-surface-200 dark:border-surface-700 xl:border-b-0" title="Suma total del valor estimado de todas las oportunidades">
-                <span class="stat-label-simple">Valor Pipeline</span>
-                <span class="stat-value-simple text-emerald-600 dark:text-emerald-400">${{ formatPipelineValue(stats.pipelineValue || 0) }}</span>
-                <span class="stat-detail text-emerald-500">valor estimado</span>
-              </div>
-
-              <!-- Tasa de Conversión -->
-              <div class="stat-card-simple border-b xl:border-b-0 xl:border-r border-surface-200 dark:border-surface-700" title="Porcentaje de leads convertidos a clientes">
-                <span class="stat-label-simple">Conversión</span>
-                <span class="stat-value-simple text-purple-600 dark:text-purple-400">{{ calculateConversionRate() }}%</span>
-                <div class="w-full mt-1">
-                  <div class="h-1 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
-                    <div class="h-full bg-purple-500 rounded-full transition-all" :style="{ width: calculateConversionRate() + '%' }"></div>
-                  </div>
+              <div class="flex flex-col min-w-[100px]" title="Leads creados en las últimas 24 horas">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-0.5">Nuevos Hoy</span>
+                <div class="flex items-end gap-2">
+                  <span class="text-xl font-bold text-green-600 dark:text-green-400">+{{ stats.newToday }}</span>
+                  <span class="text-[0.65rem] text-green-600 font-medium mb-1 bg-green-50 dark:bg-green-500/10 px-1.5 py-0.5 rounded">{{ stats.newToday > 0 ? Math.round((stats.newToday / Math.max(stats.totalLeads, 1)) * 100) : 0 }}%</span>
                 </div>
               </div>
 
-              <!-- Leads Pendientes -->
-              <div class="stat-card-simple" title="Leads que aún no han sido contactados y necesitan seguimiento">
-                <span class="stat-label-simple">Pendientes</span>
-                <span class="stat-value-simple" :class="(stats.pending || (stats.totalLeads - stats.contacted)) > 5 ? 'text-rose-600 dark:text-rose-400' : 'text-surface-600 dark:text-surface-300'">
-                  {{ stats.pending || (stats.totalLeads - stats.contacted) }}
-                </span>
-                <span class="stat-detail" :class="(stats.pending || (stats.totalLeads - stats.contacted)) > 5 ? 'text-rose-500' : 'text-green-500'">
-                  {{ (stats.pending || (stats.totalLeads - stats.contacted)) > 5 ? 'requieren atención' : 'todo en orden' }}
-                </span>
+              <div class="w-px h-8 bg-surface-200 dark:bg-surface-700 hidden sm:block"></div>
+
+              <!-- Contactados -->
+              <div class="flex flex-col min-w-[100px]" title="Leads que han sido contactados al menos una vez">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-0.5">Contactados</span>
+                <div class="flex items-end gap-2">
+                  <span class="text-xl font-bold text-indigo-600 dark:text-indigo-400">{{ stats.contacted }}</span>
+                  <span class="text-[0.65rem] text-indigo-600 font-medium mb-1 bg-indigo-50 dark:bg-indigo-500/10 px-1.5 py-0.5 rounded">{{ stats.totalLeads > 0 ? Math.round((stats.contacted / stats.totalLeads) * 100) : 0 }}%</span>
+                </div>
               </div>
-              
+
+              <div class="w-px h-8 bg-surface-200 dark:bg-surface-700 hidden lg:block"></div>
+
+              <!-- Oportunidades -->
+              <div class="flex flex-col min-w-[100px]" title="Leads calificados como oportunidades de venta activas">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-0.5">Oportunidad</span>
+                <span class="text-xl font-bold text-orange-600 dark:text-orange-400">{{ stats.opportunities }}</span>
+              </div>
+
+              <div class="w-px h-8 bg-surface-200 dark:bg-surface-700 hidden lg:block"></div>
+
+              <!-- Valor Pipeline -->
+              <div class="flex flex-col min-w-[100px]" title="Suma total del valor estimado">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-0.5">Pipeline</span>
+                <span class="text-xl font-bold text-emerald-600 dark:text-emerald-400">${{ formatPipelineValue(stats.pipelineValue || 0) }}</span>
+              </div>
+
+              <div class="w-px h-8 bg-surface-200 dark:bg-surface-700 hidden xl:block"></div>
+
+              <!-- Conversión -->
+              <div class="flex flex-col min-w-[120px] flex-1 max-w-[200px]" title="Porcentaje de leads convertidos">
+                <div class="flex justify-between items-end mb-1">
+                  <span class="text-xs font-semibold text-surface-500 uppercase tracking-wider">Conversión</span>
+                  <span class="text-sm font-bold text-purple-600 dark:text-purple-400">{{ calculateConversionRate() }}%</span>
+                </div>
+                <div class="h-1.5 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden w-full">
+                  <div class="h-full bg-purple-500 rounded-full transition-all" :style="{ width: calculateConversionRate() + '%' }"></div>
+                </div>
+              </div>
+
+              <div class="w-px h-8 bg-surface-200 dark:bg-surface-700 hidden xl:block"></div>
+
+              <!-- Pendientes -->
+              <div class="flex flex-col min-w-[100px]" title="Leads sin contactar">
+                <span class="text-xs font-semibold text-surface-500 uppercase tracking-wider mb-0.5">Pendientes</span>
+                <div class="flex items-end gap-2">
+                  <span class="text-xl font-bold" :class="(stats.pending || (stats.totalLeads - stats.contacted)) > 5 ? 'text-rose-600 dark:text-rose-400' : 'text-surface-600 dark:text-surface-300'">
+                    {{ stats.pending || (stats.totalLeads - stats.contacted) }}
+                  </span>
+                  <i v-if="(stats.pending || (stats.totalLeads - stats.contacted)) > 5" class="pi pi-exclamation-circle text-rose-500 mb-1.5" style="font-size: 0.8rem;"></i>
+                </div>
+              </div>
+
             </div>
           </div>
         </Transition>
@@ -158,24 +186,23 @@
     <div v-if="viewMode === 'kanban'" style="min-height: 0; overflow: hidden; flex: 1;">
       <div class="card p-0 overflow-hidden" style="height: 100%; display: flex; flex-direction: column;">
         <!-- Pipeline Selector Header -->
-        <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-surface-200 dark:border-surface-700">
-          <div class="flex flex-wrap items-center gap-3">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-300">Pipeline:</label>
-            <div class="flex flex-wrap gap-2">
+        <div class="flex items-center justify-between gap-3 p-4 border-b border-surface-200 dark:border-surface-700">
+          <div class="flex items-center gap-3 overflow-hidden flex-1">
+            <div class="flex gap-2 overflow-x-auto hide-scrollbar flex-1 items-end">
               <div
                 v-for="pipeline in pipelines"
                 :key="pipeline.id"
-                class="px-3 py-2 rounded-lg border cursor-pointer transition-all duration-200 group"
+                class="px-4 py-2.5 cursor-pointer transition-all duration-200 group border-b-2 whitespace-nowrap flex items-center min-w-max rounded-t-md"
                 :class="{
-                  'border-primary-500 bg-primary-50 dark:bg-primary-900/30 shadow-sm': selectedPipeline && selectedPipeline.id === pipeline.id,
-                  'border-surface-200 dark:border-surface-700 hover:border-primary-300': !selectedPipeline || selectedPipeline.id !== pipeline.id
+                  'border-primary-500 text-primary-600 dark:text-primary-400 font-bold bg-surface-0 dark:bg-surface-900 shadow-sm': selectedPipeline && selectedPipeline.id === pipeline.id,
+                  'border-surface-300 dark:border-surface-600 text-surface-700 dark:text-surface-300 font-medium bg-surface-100 dark:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 hover:bg-surface-200 dark:hover:bg-surface-700': !selectedPipeline || selectedPipeline.id !== pipeline.id
                 }"
                 @click="selectPipeline(pipeline)"
                 @contextmenu.prevent="togglePipelineMenu($event, pipeline)"
               >
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">{{ pipeline.name }}</span>
-                  <span v-if="pipeline.is_default" class="text-xs bg-primary-100 text-primary-800 px-2 py-0.5 rounded-full">Por defecto</span>
+                  <span class="font-medium mr-2">{{ pipeline.name }}</span>
+                  <span v-if="pipeline.is_default" class="text-[0.65rem] bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Default</span>
                   <Button
                     icon="pi pi-ellipsis-v"
                     @click.stop="togglePipelineMenu($event, pipeline)"
@@ -183,27 +210,26 @@
                     text
                     rounded
                     size="small"
-                    class="opacity-0 group-hover:opacity-100 transition-opacity ml-1 !p-1"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity ml-1 !w-6 !h-6"
                     title="Opciones de pipeline"
                   />
                 </div>
               </div>
-              <Button
-                icon="pi pi-plus"
-                label="Nuevo Pipeline"
-                @click="openCreatePipelineDialog"
-                severity="success"
-                outlined
-                rounded
-                size="small"
-                :title="!campaignsStore.selectedCampaign ? 'Primero selecciona o crea una campaña' : 'Agregar nuevo pipeline'"
-                class="!border-dashed !border-2"
-                :disabled="!campaignsStore.selectedCampaign"
-              />
-              
-              <!-- Menu de opciones del pipeline -->
-              <Menu ref="pipelineMenu" :model="pipelineMenuItems" :popup="true" />
             </div>
+            <Button
+              icon="pi pi-plus"
+              label="Pipeline"
+              @click="openCreatePipelineDialog"
+              severity="secondary"
+              outlined
+              size="small"
+              :title="!campaignsStore.selectedCampaign ? 'Primero selecciona o crea una campaña' : 'Agregar nuevo pipeline'"
+              class="flex-shrink-0"
+              :disabled="!campaignsStore.selectedCampaign"
+            />
+            
+            <!-- Menu de opciones del pipeline -->
+            <Menu ref="pipelineMenu" :model="pipelineMenuItems" :popup="true" />
           </div>
           
           <!-- Botón Nueva Etapa -->
@@ -271,7 +297,7 @@
           <div 
             v-for="stage in stages" 
             :key="stage.id" 
-            class="flex-shrink-0 w-80 bg-surface-100 dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 flex flex-col transition-all duration-200"
+            class="flex-shrink-0 w-[22rem] bg-surface-50/50 dark:bg-surface-900/50 rounded-xl border border-surface-200 dark:border-surface-700 flex flex-col transition-all duration-200 shadow-sm"
             :class="{ 'ring-2 ring-primary-500 bg-primary-50 dark:bg-primary-900/30': dragOverStageId === stage.id }"
             @dragover.prevent
             @dragenter.prevent="onDragEnter($event, stage.id)"
@@ -279,108 +305,118 @@
             @drop="onDrop($event, stage.id)"
           >
             <!-- Column Header -->
-            <div 
-              class="flex justify-between items-center p-4 rounded-t-xl border-b"
-              :style="{ 
-                backgroundColor: formatColor(stage.color) + '20',
-                borderColor: formatColor(stage.color) + '40'
-              }"
-            >
-              <div class="flex flex-col gap-1 min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                  <h3 style="font-size: 1.5rem;" class="font-semibold text-surface-800 dark:text-surface-100 truncate" :title="stage.name">{{ stage.name }}</h3>
+            <div class="flex flex-col p-3.5 rounded-t-xl border-b border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-800 relative shadow-sm z-10">
+              <!-- Top color indicator -->
+              <div 
+                class="absolute top-0 left-0 w-full h-1 rounded-t-xl" 
+                :style="{ backgroundColor: formatColor(stage.color) }"
+              ></div>
+              
+              <div class="flex justify-between items-center mb-1.5 mt-0.5">
+                <div class="flex items-center gap-2 overflow-hidden">
+                  <h3 class="font-bold text-surface-800 dark:text-surface-100 truncate text-[1.05rem]" :title="stage.name">{{ stage.name }}</h3>
                   <span 
-                    class="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
+                    class="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
                     :style="{ 
-                      backgroundColor: formatColor(stage.color) + '30',
+                      backgroundColor: formatColor(stage.color) + '15',
                       color: formatColor(stage.color)
                     }"
                   >
                     {{ getLeadsByStage(stage.id).length }}
                   </span>
                 </div>
+                <div class="flex-shrink-0 ml-1">
+                  <Button 
+                    icon="pi pi-ellipsis-h" 
+                    severity="secondary" 
+                    text 
+                    rounded 
+                    size="small"
+                    class="!w-6 !h-6 text-surface-400 hover:text-surface-700 dark:hover:text-surface-200"
+                    @click="toggleStageMenu($event, stage)"
+                    :aria-controls="'stage_menu_' + stage.id"
+                    aria-haspopup="true"
+                  />
+                  <Menu 
+                    :ref="el => stageMenuRefs[stage.id] = el" 
+                    :id="'stage_menu_' + stage.id" 
+                    :model="getStageMenuItems(stage)" 
+                    :popup="true"
+                    class="rounded-xl"
+                  />
+                </div>
               </div>
-              <div class="flex-shrink-0 ml-2">
-                <Button 
-                  icon="pi pi-ellipsis-v" 
-                  severity="secondary" 
-                  text 
-                  rounded 
-                  size="small"
-                  @click="toggleStageMenu($event, stage)"
-                  :aria-controls="'stage_menu_' + stage.id"
-                  aria-haspopup="true"
-                />
-                <Menu 
-                  :ref="el => stageMenuRefs[stage.id] = el" 
-                  :id="'stage_menu_' + stage.id" 
-                  :model="getStageMenuItems(stage)" 
-                  :popup="true"
-                  class="rounded-xl"
-                />
+              
+              <div class="flex items-center text-[0.7rem] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-widest gap-1.5">
+                <span>Valor:</span>
+                <span class="text-surface-600 dark:text-surface-300">${{ formatPipelineValue(getLeadsByStage(stage.id).reduce((sum, lead) => sum + (parseFloat(lead.estimated_value) || 0), 0)) }}</span>
               </div>
             </div>
-            
+
             <!-- Column Content -->
             <div class="flex-1 p-2 overflow-y-auto flex flex-col gap-2">
-              <div 
+                <div 
                 v-for="lead in getLeadsByStage(stage.id)" 
                 :key="lead.id"
-                class="bg-surface-0 dark:bg-surface-900 rounded-lg px-2.5 py-2 cursor-grab border border-surface-200 dark:border-surface-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-                :class="{ 'opacity-50 rotate-1': draggedLead && draggedLead.id === lead.id }"
+                class="bg-surface-0 dark:bg-surface-900 rounded-2xl p-4 cursor-grab border border-surface-200/60 dark:border-surface-700/60 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-300 flex flex-col gap-3.5 group"
+                :class="{ 'opacity-50 rotate-2 shadow-xl bg-surface-50 dark:bg-surface-800': draggedLead && draggedLead.id === lead.id }"
                 draggable="true"
                 @dragstart="onDragStart($event, lead)"
                 @dragend="onDragEnd"
               >
-                <div class="flex justify-between items-center mb-1">
-                  <h4 class="font-medium text-surface-900 dark:text-surface-0 truncate" style="font-size: 1.0rem;">{{ lead.name }}</h4>
-                  <Tag :value="lead.status" :severity="getStatusSeverity(lead.status)" class="text-xs !py-0 !px-1.5" />
+                <!-- Card Header: Title & Status -->
+                <div class="flex justify-between items-start gap-3">
+                  <h4 class="font-bold text-surface-900 dark:text-surface-0 m-0 truncate w-full group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors tracking-tight text-[0.95rem]">{{ lead.name }}</h4>
+                  <span 
+                    class="text-[0.6rem] py-0.5 px-2.5 uppercase tracking-widest rounded-md flex-shrink-0 font-bold border"
+                    :class="[
+                      lead.status === 'nuevo' ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/30' :
+                      lead.status === 'contactado' ? 'bg-teal-50 text-teal-600 border-teal-100 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800/30' :
+                      lead.status === 'oportunidad' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/30' :
+                      lead.status === 'cliente' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/30' :
+                      'bg-surface-50 text-surface-600 border-surface-200 dark:bg-surface-800/50 dark:text-surface-400 dark:border-surface-700'
+                    ]"
+                  >{{ lead.status }}</span>
                 </div>
                 
-                <div class="space-y-0.5 text-xs text-surface-500 dark:text-surface-400">
-                  <div v-if="lead.company" class="flex items-center gap-1">
-                    <i class="pi pi-building" style="font-size: 0.65rem;"></i>
-                    <span class="truncate">{{ lead.company }}</span>
+                <!-- Card Body: Date & Owner -->
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
+                    <i class="pi pi-calendar-plus text-surface-400 dark:text-surface-500" style="font-size: 0.70rem;"></i>
+                    <span class="truncate">{{ formatDate(lead.created_at) }}</span>
                   </div>
-                  <div v-if="lead.email" class="flex items-center gap-1">
-                    <i class="pi pi-envelope" style="font-size: 0.65rem;"></i>
-                    <span class="truncate">{{ lead.email }}</span>
-                  </div>
-                  <div v-if="lead.estimated_value" class="flex items-center gap-1">
-                    <i class="pi pi-dollar" style="font-size: 0.65rem;"></i>
-                    <span class="font-medium text-green-600 dark:text-green-400">${{ formatCurrency(lead.estimated_value) }}</span>
-                  </div>
-                  <div v-if="lead.owner_name" class="flex items-center gap-1">
-                    <i class="pi pi-user" style="font-size: 0.65rem;"></i>
-                    <span class="font-medium text-primary-600 dark:text-primary-400">{{ lead.owner_name }}</span>
+                  
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <div v-if="lead.owner_name" class="w-5 h-5 rounded-full flex items-center justify-center text-[0.6rem] font-bold text-white shadow-sm flex-shrink-0" :style="{ backgroundColor: getAvatarColor(lead.owner_name) }">
+                      {{ lead.owner_name.substring(0, 2).toUpperCase() }}
+                    </div>
+                    <div v-else class="w-5 h-5 rounded-full flex items-center justify-center bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-400 text-[0.6rem] shadow-sm flex-shrink-0">
+                      <i class="pi pi-user" style="font-size: 0.5rem"></i>
+                    </div>
+                    <span class="text-xs text-surface-700 dark:text-surface-300 font-medium truncate">{{ lead.owner_name || 'Sin asignar' }}</span>
                   </div>
                 </div>
                 
-                <div class="flex justify-between items-center mt-1.5 pt-1 border-t border-surface-200 dark:border-surface-700">
-                  <div class="flex items-center gap-1 text-xs text-surface-400 dark:text-surface-500" style="font-size: 0.65rem;">
-                    <i class="pi pi-calendar" style="font-size: 0.6rem;"></i>
-                    <span>{{ formatDate(lead.created_at) }}</span>
-                  </div>
-                  <div class="flex gap-0.5">
-                    <Button 
-                      icon="pi pi-eye" 
-                      severity="secondary" 
-                      text 
-                      rounded 
-                      size="small"
-                      class="!w-6 !h-6"
-                      @click="viewLead(lead)"
-                    />
-                    <Button 
-                      icon="pi pi-pencil" 
-                      severity="info" 
-                      text 
-                      rounded 
-                      size="small"
-                      class="!w-6 !h-6"
-                      @click="editLead(lead)"
-                    />
-                  </div>
+                <!-- Card Footer: Actions -->
+                <div class="flex justify-end items-center mt-auto pt-1 gap-2">
+                  <Button 
+                    icon="pi pi-eye" 
+                    label="Ver Info"
+                    severity="secondary" 
+                    outlined
+                    size="small"
+                    class="!py-1.5 !px-3 !text-xs !rounded-lg"
+                    @click.stop="viewLead(lead)"
+                  />
+                  <Button 
+                    icon="pi pi-pencil" 
+                    label="Editar"
+                    severity="primary" 
+                    outlined
+                    size="small"
+                    class="!py-1.5 !px-3 !text-xs !rounded-lg"
+                    @click.stop="editLead(lead)"
+                  />
                 </div>
               </div>
               
@@ -411,17 +447,10 @@
           :loading="loadingLeads"
           filterDisplay="menu"
           :globalFilterFields="['name', 'email', 'company', 'phone']"
-          showGridlines
         >
           <template #header>
-            <div class="flex justify-between">
-              <Button type="button" icon="pi pi-filter-slash" label="Limpiar Filtros" outlined @click="clearFilters()" />
-              <IconField>
-                <InputIcon>
-                  <i class="pi pi-search" />
-                </InputIcon>
-                <InputText v-model="leadsFilters['global'].value" placeholder="Buscar leads..." />
-              </IconField>
+            <div class="flex justify-start">
+              <Button type="button" icon="pi pi-filter-slash" label="Limpiar Filtros" outlined @click="clearFilters()" size="small" />
             </div>
           </template>
           <template #empty> No se encontraron leads. </template>
@@ -667,13 +696,12 @@
       </template>
     </Dialog>
 
-    <!-- Diálogo para crear/editar lead -->
-    <Dialog 
+    <!-- Drawer para crear/editar lead -->
+    <Drawer 
       v-model:visible="leadDialog" 
       :header="leadDialogMode === 'create' ? 'Crear Nuevo Lead' : 'Editar Lead'" 
-      :modal="true" 
-      :closable="true"
-      :style="{ width: '90vw', maxWidth: '600px' }"
+      position="right"
+      class="!w-full md:!w-[30rem] lg:!w-[35rem]"
     >
       <form @submit.prevent="saveLead">
         <div class="grid grid-cols-12 gap-4">
@@ -783,7 +811,7 @@
           />
         </div>
       </form>
-    </Dialog>
+    </Drawer>
 
     <!-- Diálogo para crear/editar etapa -->
     <Dialog
@@ -1066,7 +1094,8 @@ const leadForm = ref({
   status: 'nuevo',
   stage_id: null,
   owner_id: null,
-  estimated_value: null
+  estimated_value: null,
+  campaign_id: null
 });
 
 const stageForm = ref({
@@ -1203,7 +1232,7 @@ const loadPipelines = async () => {
     }
 
     const pipelinesData = await crmService.getPipelines(organizationsStore.currentOrganizationId, campaignId);
-    pipelines.value = pipelinesData;
+    pipelines.value = pipelinesData.sort((a, b) => a.id - b.id);
 
     if (pipelinesData.length > 0) {
       const defaultPipeline = pipelinesData.find(p => p.is_default);
@@ -1344,7 +1373,30 @@ const loadOwners = async () => {
 
 // ===== KANBAN HELPERS =====
 const getLeadsByStage = (stageId) => {
-  return leads.value.filter(lead => lead.stage_id === stageId);
+  let filtered = leads.value.filter(lead => lead.stage_id === stageId);
+  const search = leadsFilters.value['global']?.value?.toLowerCase();
+  
+  if (search) {
+    filtered = filtered.filter(lead => 
+      (lead.name && lead.name.toLowerCase().includes(search)) ||
+      (lead.company && lead.company.toLowerCase().includes(search)) ||
+      (lead.email && lead.email.toLowerCase().includes(search)) ||
+      (lead.phone && lead.phone.toLowerCase().includes(search))
+    );
+  }
+  return filtered;
+};
+
+// ===== AVATAR HELPER =====
+const getAvatarColor = (name) => {
+  if (!name) return '#94a3b8'; // default slate
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ['#f87171', '#fb923c', '#fbbf24', '#34d399', '#2dd4bf', '#38bdf8', '#818cf8', '#a78bfa', '#f472b6', '#fb7185'];
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
 };
 
 // ===== STATS HELPERS =====
@@ -1453,7 +1505,8 @@ const openCreateLeadDialog = () => {
     status: 'nuevo',
     stage_id: stages.value.length > 0 ? stages.value[0].id : null,
     owner_id: null,
-    estimated_value: null
+    estimated_value: null,
+    campaign_id: campaignsStore.currentCampaignId || null
   };
   leadDialog.value = true;
 };
@@ -1480,7 +1533,8 @@ const openCreateLeadDialogForStage = (stageId) => {
     status: 'nuevo',
     stage_id: stageId,
     owner_id: null,
-    estimated_value: null
+    estimated_value: null,
+    campaign_id: campaignsStore.currentCampaignId || null
   };
   leadDialog.value = true;
 };
